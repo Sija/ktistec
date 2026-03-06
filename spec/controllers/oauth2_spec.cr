@@ -1,4 +1,5 @@
 require "../../src/controllers/oauth2"
+require "../../src/services/oauth2/client_registration"
 require "../../src/models/oauth2/provider/client"
 require "../../src/models/oauth2/provider/access_token"
 require "../../src/models/account"
@@ -58,31 +59,6 @@ Spectator.describe OAuth2Controller do
     it "rejects malformed JSON" do
       post "/oauth/register", headers: JSON_HEADERS, body: "{\"client_name\": \"Test Client\", "
       expect(response.status_code).to eq(400)
-    end
-
-    context "when the provisional client buffer is full" do
-      before_each do
-        # set a small buffer size for testing
-        OAuth2Controller.provisional_client_buffer_size = 2
-        OAuth2Controller.provisional_clients.clear
-      end
-
-      it "discards the oldest client" do
-        post "/oauth/register", body: {"client_name" => "Client 1", "redirect_uris" => "https://a.com"}.to_json
-        client1_id = JSON.parse(response.body)["client_id"].as_s
-
-        post "/oauth/register", body: {"client_name" => "Client 2", "redirect_uris" => "https://b.com"}.to_json
-        client2_id = JSON.parse(response.body)["client_id"].as_s
-
-        post "/oauth/register", body: {"client_name" => "Client 3", "redirect_uris" => "https://c.com"}.to_json
-        client3_id = JSON.parse(response.body)["client_id"].as_s
-
-        provisional_clients = OAuth2Controller.provisional_clients
-        client_ids = provisional_clients.map(&.client_id)
-
-        expect(client_ids).not_to contain(client1_id)
-        expect(client_ids).to contain(client2_id, client3_id)
-      end
     end
   end
 
@@ -162,7 +138,7 @@ Spectator.describe OAuth2Controller do
           )
         end
 
-        before_each { OAuth2Controller.provisional_clients.push(client) }
+        before_each { OAuth2::ClientRegistration.provisional_clients.push(client) }
 
         # assert that the client is not persisted to the database before and after each test
 
@@ -254,11 +230,11 @@ Spectator.describe OAuth2Controller do
           )
         end
 
-        before_each { OAuth2Controller.provisional_clients.push(client) }
+        before_each { OAuth2::ClientRegistration.provisional_clients.push(client) }
 
         it "promotes it to a permanent client" do
           post "/oauth/authorize", headers: HTML_HEADERS, body: body
-          expect(OAuth2Controller.provisional_clients).not_to have(client)
+          expect(OAuth2::ClientRegistration.provisional_clients).not_to have(client)
           expect(client.reload!).to eq(client)
         end
 
@@ -274,7 +250,7 @@ Spectator.describe OAuth2Controller do
 
           it "deletes and does not promote the provisional client" do
             post "/oauth/authorize", headers: HTML_HEADERS, body: body
-            expect(OAuth2Controller.provisional_clients).not_to have(client)
+            expect(OAuth2::ClientRegistration.provisional_clients).not_to have(client)
             expect { client.reload! }.to raise_error(Ktistec::Model::NotFound)
           end
         end

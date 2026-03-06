@@ -1,4 +1,5 @@
 require "../framework/controller"
+require "../services/oauth2/client_registration"
 require "../models/oauth2/provider/client"
 require "../models/oauth2/provider/access_token"
 
@@ -12,17 +13,6 @@ class OAuth2Controller
   Log = ::Log.for("oauth2")
 
   skip_auth ["/oauth/register", "/oauth/token"], OPTIONS, POST
-
-  # In-memory provisional ring buffer for newly registered clients.
-  #
-  # A client is only persisted to the database after it has been
-  # successfully used in the first step of an authorization flow.
-  #
-  class_property provisional_clients = Deque(OAuth2::Provider::Client).new
-
-  # Size of the in-memory provisional storage ring buffer.
-  #
-  class_property provisional_client_buffer_size = 20
 
   private macro set_headers
     env.response.headers.add("Access-Control-Allow-Origin", "*")
@@ -53,11 +43,9 @@ class OAuth2Controller
 
     Log.trace { "register[POST]: client_name=#{client_name_raw}, redirect_uris=#{redirect_uris_raw}" }
 
-    unless (client_name = client_name_raw.try(&.as_s).presence)
-      Log.debug { "`client_name` is required" }
-      bad_request "`client_name` is required"
-    end
+    client_name = client_name_raw.try(&.as_s) || ""
 
+    redirect_uris = [] of String
     if redirect_uris_raw
       if (redirect_uris_as_string = redirect_uris_raw.as_s?)
         redirect_uris = [redirect_uris_as_string]
@@ -68,48 +56,27 @@ class OAuth2Controller
         bad_request "`redirect_uris` must be a string or array of strings"
       end
     end
-    unless redirect_uris
-      Log.debug { "`redirect_uris` is required" }
-      bad_request "`redirect_uris` is required"
-    end
 
-    errors = [] of String
-    redirect_uris.each do |uri_string|
-      begin
-        uri = URI.parse(uri_string)
-        unless uri.scheme.presence && uri.host.presence
-          errors << uri_string
-        end
-      rescue URI::Error
-        errors << uri_string
-      end
-    end
-    unless errors.empty?
-      Log.debug { "`redirect_uris` must be valid URIs: #{errors.join(", ")}" }
-      bad_request "`redirect_uris` must be valid URIs"
-    end
-
-    client = OAuth2::Provider::Client.new(
-      client_id: Random::Secure.urlsafe_base64,
-      client_secret: Random::Secure.urlsafe_base64,
+    result = OAuth2::ClientRegistration.register(
       client_name: client_name,
-      redirect_uris: redirect_uris.join(" "),
-      scope: "mcp"
+      redirect_uris: redirect_uris,
+      scopes: "mcp"
     )
 
-    @@provisional_clients.push(client)
-    if @@provisional_clients.size > @@provisional_client_buffer_size
-      @@provisional_clients.shift
+    case result
+    in OAuth2::ClientRegistration::Success
+      client = result.client
+      env.response.status_code = 201
+      {
+        "client_id"     => client.client_id,
+        "client_secret" => client.client_secret,
+        "client_name"   => client.client_name,
+        "redirect_uris" => client.redirect_uris.split,
+      }.to_json
+    in OAuth2::ClientRegistration::Failure
+      Log.debug { result.error }
+      bad_request result.error
     end
-
-    env.response.status_code = 201
-
-    {
-      "client_id"     => client.client_id,
-      "client_secret" => client.client_secret,
-      "client_name"   => client.client_name,
-      "redirect_uris" => client.redirect_uris.split,
-    }.to_json
   end
 
   record AuthorizationCode,
@@ -121,13 +88,6 @@ class OAuth2Controller
     expires_at : Time
 
   class_property authorization_codes = {} of String => AuthorizationCode
-
-  private def self.find_client(client_id)
-    OAuth2::Provider::Client.find?(client_id: client_id) ||
-      @@provisional_clients.find do |client|
-        client.client_id == client_id
-      end
-  end
 
   get "/oauth/authorize" do |env|
     client_id = env.params.query["client_id"]?.presence
@@ -162,7 +122,7 @@ class OAuth2Controller
       bad_request "`client_id` and `redirect_uri` are required"
     end
 
-    client = find_client(client_id)
+    client = OAuth2::ClientRegistration.find(client_id)
     unless client
       Log.debug { "Invalid `client_id`: #{client_id}" }
       bad_request "Invalid `client_id`"
@@ -220,7 +180,7 @@ class OAuth2Controller
       bad_request "`client_id` and `redirect_uri` are required"
     end
 
-    client = find_client(client_id)
+    client = OAuth2::ClientRegistration.find(client_id)
     unless client
       Log.debug { "Invalid `client_id`: #{client_id}" }
       bad_request "Invalid `client_id`"
@@ -236,14 +196,12 @@ class OAuth2Controller
       bad_request "Unsupported `response_type`"
     end
 
-    # delete the provisional client no matter what
-    @@provisional_clients.delete(client)
-
     if env.params.body["deny"]?
+      OAuth2::ClientRegistration.remove_provisional(client)
       redirect_uri = URI.parse(redirect_uri)
       redirect_uri.query = "error=access_denied&state=#{state}"
     else
-      client.save if client.new_record?
+      OAuth2::ClientRegistration.persist(client)
 
       # in-memory storage for the authorization code
 
