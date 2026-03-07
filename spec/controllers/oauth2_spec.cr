@@ -283,31 +283,10 @@ Spectator.describe OAuth2Controller do
 
     let(auth_code) { make_authorization_code }
 
-    let(body) { "grant_type=authorization_code&code=#{code}&client_id=#{auth_code.client_id}&client_secret=#{test_client.client_secret}&redirect_uri=#{auth_code.redirect_uri}&code_verifier=#{code_verifier}" }
-
     before_each { OAuth2Controller.authorization_codes[code] = auth_code }
 
-    it "returns an access token" do
-      expect { post "/oauth/token", headers: HTML_HEADERS, body: body }.to change { OAuth2::Provider::AccessToken.count }.by(1)
-      expect(response.status_code).to eq(200)
-      json_body = JSON.parse(response.body)
-      expect(json_body["access_token"]?).not_to be_nil
-      expect(json_body["token_type"]?).to eq("Bearer")
-      expect(json_body["expires_in"]?).to eq(3600 * 24 * 30)
-    end
-
-    it "updates the client's last_accessed_at timestamp" do
-      expect { post "/oauth/token", headers: HTML_HEADERS, body: body }.to change { test_client.reload!.last_accessed_at }.from(nil)
-      expect(test_client.reload!.last_accessed_at).to be_close(Time.utc, delta: 1.second)
-    end
-
-    it "deletes the authorization code after use" do
-      post "/oauth/token", headers: HTML_HEADERS, body: body
-      expect(OAuth2Controller.authorization_codes.has_key?(code)).to be_false
-    end
-
-    context "without a client_secret" do
-      let(body) { super.gsub(/&client_secret=[^&]+/, "") }
+    context "with a URL-encoded body" do
+      let(body) { "grant_type=authorization_code&code=#{code}&client_id=#{auth_code.client_id}&client_secret=#{test_client.client_secret}&redirect_uri=#{auth_code.redirect_uri}&code_verifier=#{code_verifier}" }
 
       it "returns an access token" do
         expect { post "/oauth/token", headers: HTML_HEADERS, body: body }.to change { OAuth2::Provider::AccessToken.count }.by(1)
@@ -317,17 +296,106 @@ Spectator.describe OAuth2Controller do
         expect(json_body["token_type"]?).to eq("Bearer")
         expect(json_body["expires_in"]?).to eq(3600 * 24 * 30)
       end
+
+      it "updates the client's last_accessed_at timestamp" do
+        expect { post "/oauth/token", headers: HTML_HEADERS, body: body }.to change { test_client.reload!.last_accessed_at }.from(nil)
+        expect(test_client.reload!.last_accessed_at).to be_close(Time.utc, delta: 1.second)
+      end
+
+      it "deletes the authorization code after use" do
+        post "/oauth/token", headers: HTML_HEADERS, body: body
+        expect(OAuth2Controller.authorization_codes.has_key?(code)).to be_false
+      end
+
+      context "without a client_secret" do
+        let(body) { super.gsub(/&client_secret=[^&]+/, "") }
+
+        it "returns an access token" do
+          expect { post "/oauth/token", headers: HTML_HEADERS, body: body }.to change { OAuth2::Provider::AccessToken.count }.by(1)
+          expect(response.status_code).to eq(200)
+          json_body = JSON.parse(response.body)
+          expect(json_body["access_token"]?).not_to be_nil
+          expect(json_body["token_type"]?).to eq("Bearer")
+          expect(json_body["expires_in"]?).to eq(3600 * 24 * 30)
+        end
+      end
+
+      context "with basic authentication" do
+        let(credentials) { Base64.strict_encode("#{test_client.client_id}:#{test_client.client_secret}") }
+
+        let(body) { super.gsub(/client_secret=#{test_client.client_secret}/, "client_secret=invalid").gsub("client_id=#{test_client.client_id}", "client_id=invalid") }
+
+        let(headers) { HTML_HEADERS.dup.add("Authorization", "Basic #{credentials}") }
+
+        it "returns an access token" do
+          expect { post "/oauth/token", headers: headers, body: body }.to change { OAuth2::Provider::AccessToken.count }.by(1)
+          expect(response.status_code).to eq(200)
+          json_body = JSON.parse(response.body)
+          expect(json_body["access_token"]?).not_to be_nil
+          expect(json_body["token_type"]?).to eq("Bearer")
+          expect(json_body["expires_in"]?).to eq(3600 * 24 * 30)
+        end
+
+        context "and invalid credentials" do
+          let(credentials) { Base64.strict_encode("invalid_client:invalid_secret") }
+
+          it "returns an error" do
+            post "/oauth/token", headers: headers, body: body
+            expect(response.status_code).to eq(401)
+          end
+        end
+      end
+
+      it "returns an error with an invalid grant_type" do
+        post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("grant_type=authorization_code", "grant_type=invalid")
+        expect(response.status_code).to eq(400)
+      end
+
+      it "returns an error without a code" do
+        post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("code=#{code}&", "")
+        expect(response.status_code).to eq(400)
+      end
+
+      it "returns an error with an invalid code" do
+        post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("code=#{code}", "code=invalid")
+        expect(response.status_code).to eq(400)
+      end
+
+      context "given an expired code" do
+        let(auth_code) { make_authorization_code(expires_at: Time.utc - 1.minute) }
+
+        it "returns an error" do
+          post "/oauth/token", headers: HTML_HEADERS, body: body
+          expect(response.status_code).to eq(400)
+        end
+      end
+
+      it "returns an error with a mismatched client_id" do
+        post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("client_id=#{auth_code.client_id}", "client_id=invalid")
+        expect(response.status_code).to eq(400)
+      end
+
+      it "returns an error with an invalid client_secret" do
+        post "/oauth/token", headers: HTML_HEADERS, body: body.gsub(/client_secret=([^&]+)/, "client_secret=invalid")
+        expect(response.status_code).to eq(401)
+      end
+
+      it "returns an error with a mismatched redirect_uri" do
+        post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("redirect_uri=#{auth_code.redirect_uri}", "redirect_uri=https://attacker.com")
+        expect(response.status_code).to eq(400)
+      end
+
+      it "returns an error with an invalid code_verifier" do
+        post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("code_verifier=#{code_verifier}", "code_verifier=invalid")
+        expect(response.status_code).to eq(400)
+      end
     end
 
-    context "with basic authentication" do
-      let(credentials) { Base64.strict_encode("#{test_client.client_id}:#{test_client.client_secret}") }
-
-      let(body) { super.gsub(/client_secret=#{test_client.client_secret}/, "client_secret=invalid").gsub("client_id=#{test_client.client_id}", "client_id=invalid") }
-
-      let(headers) { HTML_HEADERS.dup.add("Authorization", "Basic #{credentials}") }
+    context "with a JSON body" do
+      let(body) { {grant_type: "authorization_code", code: code, client_id: auth_code.client_id, client_secret: test_client.client_secret, redirect_uri: auth_code.redirect_uri, code_verifier: code_verifier}.to_json }
 
       it "returns an access token" do
-        expect { post "/oauth/token", headers: headers, body: body }.to change { OAuth2::Provider::AccessToken.count }.by(1)
+        expect { post "/oauth/token", headers: JSON_HEADERS, body: body }.to change { OAuth2::Provider::AccessToken.count }.by(1)
         expect(response.status_code).to eq(200)
         json_body = JSON.parse(response.body)
         expect(json_body["access_token"]?).not_to be_nil
@@ -335,58 +403,20 @@ Spectator.describe OAuth2Controller do
         expect(json_body["expires_in"]?).to eq(3600 * 24 * 30)
       end
 
-      context "and invalid credentials" do
-        let(credentials) { Base64.strict_encode("invalid_client:invalid_secret") }
-
-        it "returns an error" do
-          post "/oauth/token", headers: headers, body: body
-          expect(response.status_code).to eq(401)
-        end
+      it "updates the client's last_accessed_at timestamp" do
+        expect { post "/oauth/token", headers: JSON_HEADERS, body: body }.to change { test_client.reload!.last_accessed_at }.from(nil)
+        expect(test_client.reload!.last_accessed_at).to be_close(Time.utc, delta: 1.second)
       end
-    end
 
-    it "returns an error with an invalid grant_type" do
-      post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("grant_type=authorization_code", "grant_type=invalid")
-      expect(response.status_code).to eq(400)
-    end
+      it "deletes the authorization code after use" do
+        post "/oauth/token", headers: JSON_HEADERS, body: body
+        expect(OAuth2Controller.authorization_codes.has_key?(code)).to be_false
+      end
 
-    it "returns an error without a code" do
-      post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("code=#{code}&", "")
-      expect(response.status_code).to eq(400)
-    end
-
-    it "returns an error with an invalid code" do
-      post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("code=#{code}", "code=invalid")
-      expect(response.status_code).to eq(400)
-    end
-
-    context "given an expired code" do
-      let(auth_code) { make_authorization_code(expires_at: Time.utc - 1.minute) }
-
-      it "returns an error" do
-        post "/oauth/token", headers: HTML_HEADERS, body: body
+      it "returns an error with invalid JSON" do
+        post "/oauth/token", headers: JSON_HEADERS, body: "{invalid json"
         expect(response.status_code).to eq(400)
       end
-    end
-
-    it "returns an error with a mismatched client_id" do
-      post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("client_id=#{auth_code.client_id}", "client_id=invalid")
-      expect(response.status_code).to eq(400)
-    end
-
-    it "returns an error with an invalid client_secret" do
-      post "/oauth/token", headers: HTML_HEADERS, body: body.gsub(/client_secret=([^&]+)/, "client_secret=invalid")
-      expect(response.status_code).to eq(401)
-    end
-
-    it "returns an error with a mismatched redirect_uri" do
-      post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("redirect_uri=#{auth_code.redirect_uri}", "redirect_uri=https://attacker.com")
-      expect(response.status_code).to eq(400)
-    end
-
-    it "returns an error with an invalid code_verifier" do
-      post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("code_verifier=#{code_verifier}", "code_verifier=invalid")
-      expect(response.status_code).to eq(400)
     end
   end
 end

@@ -232,12 +232,23 @@ class OAuth2Controller
   post "/oauth/token" do |env|
     set_headers
 
-    grant_type = env.params.body["grant_type"]?.presence
-    code = env.params.body["code"]?.presence
-    redirect_uri = env.params.body["redirect_uri"]?.presence
-    code_verifier = env.params.body["code_verifier"]?.presence
-    auth_header = env.request.headers["Authorization"]?.presence
-    client_id_param = env.params.body["client_id"]?.presence
+    params =
+      begin
+        env.params.body.presence || env.params.json.presence
+      rescue JSON::ParseException
+        Log.debug { "Invalid JSON body" }
+        bad_request "Invalid JSON"
+      end
+
+    if params
+      grant_type = params["grant_type"]?.try(&.to_s).presence
+      code = params["code"]?.try(&.to_s).presence
+      redirect_uri = params["redirect_uri"]?.try(&.to_s).presence
+      code_verifier = params["code_verifier"]?.try(&.to_s).presence
+      client_id = params["client_id"]?.try(&.to_s).presence
+      client_secret = params["client_secret"]?.try(&.to_s).presence
+      auth_header = env.request.headers["Authorization"]?.presence
+    end
 
     Log.trace do
       "token[POST]: " \
@@ -245,8 +256,8 @@ class OAuth2Controller
       "code_present=#{!!code}, " \
       "redirect_uri=#{redirect_uri}, " \
       "code_verifier_present=#{!!code_verifier}, " \
-      "auth_basic=#{auth_header && auth_header.starts_with?("Basic ")}, " \
-      "client_id_param=#{client_id_param}"
+      "client_id=#{client_id}, " \
+      "auth_basic=#{auth_header && auth_header.starts_with?("Basic ")}"
     end
 
     unless grant_type == "authorization_code"
@@ -285,6 +296,9 @@ class OAuth2Controller
       bad_request "Invalid `code_verifier`"
     end
 
+    client_id_param = client_id
+    client_secret_param = client_secret
+
     client =
       if (auth = env.request.headers["Authorization"]?) && auth.starts_with?("Basic ")
         credentials = Base64.decode_string(auth[6..-1])
@@ -306,9 +320,8 @@ class OAuth2Controller
           Log.debug { "Invalid `client_id`" }
           bad_request "Invalid `client_id`"
         end
-        client_secret = env.params.body["client_secret"]?.presence
-        if client_secret
-          unless client_secret == c.client_secret
+        if client_secret_param
+          unless client_secret_param == c.client_secret
             Log.debug { "Invalid `client_secret`" }
             unauthorized "Invalid `client_secret`"
           end
