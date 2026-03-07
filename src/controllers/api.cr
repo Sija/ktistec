@@ -9,7 +9,7 @@ class APIController
   Log = ::Log.for("api")
 
   skip_auth ["/api/v1/apps"], OPTIONS, POST
-  skip_auth ["/api/v2/instance"], GET
+  skip_auth ["/api/v1/instance", "/api/v2/instance"], GET
 
   private macro set_headers
     env.response.headers.add("Access-Control-Allow-Origin", "*")
@@ -95,6 +95,13 @@ class APIController
       Log.debug { result.error }
       unprocessable_entity "api/error", error: result.error
     end
+  end
+
+  get "/api/v1/instance" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    API::V1::Serializers::Instance.current.to_json
   end
 
   get "/api/v2/instance" do |env|
