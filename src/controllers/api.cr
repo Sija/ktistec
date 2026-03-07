@@ -1,6 +1,7 @@
 require "../framework/controller"
 require "../services/oauth2/client_registration"
 require "../api/serializers/application"
+require "../api/serializers/instance"
 
 class APIController
   include Ktistec::Controller
@@ -8,6 +9,7 @@ class APIController
   Log = ::Log.for("api")
 
   skip_auth ["/api/v1/apps"], OPTIONS, POST
+  skip_auth ["/api/v2/instance"], GET
 
   private macro set_headers
     env.response.headers.add("Access-Control-Allow-Origin", "*")
@@ -93,5 +95,12 @@ class APIController
       Log.debug { result.error }
       unprocessable_entity "api/error", error: result.error
     end
+  end
+
+  get "/api/v2/instance" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    API::V2::Serializers::Instance.current.to_json
   end
 end

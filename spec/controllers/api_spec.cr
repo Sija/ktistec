@@ -262,4 +262,24 @@ Spectator.describe APIController do
       end
     end
   end
+
+  describe "GET /api/v2/instance" do
+    before_each { API::V2::Serializers::Instance.clear_cache! }
+
+    it "succeeds" do
+      get "/api/v2/instance"
+      expect(response.status_code).to eq(200)
+    end
+
+    it "returns JSON" do
+      get "/api/v2/instance"
+      expect(response.headers["Content-Type"]?).to eq("application/json")
+    end
+
+    it "includes domain" do
+      get "/api/v2/instance"
+      json = JSON.parse(response.body)
+      expect(json["domain"].as_s).to eq("test.test")
+    end
+  end
 end
