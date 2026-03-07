@@ -189,7 +189,7 @@ module API
         settings_nonce = Ktistec::Settings.nonce
         posts_id = WellKnownController.cached_posts_count.id
 
-        if @@cached_settings_nonce != settings_nonce || @@cached_posts_id != posts_id
+        if @@cached_instance.nil? || @@cached_settings_nonce != settings_nonce || @@cached_posts_id != posts_id
           @@cached_settings_nonce = settings_nonce
           @@cached_posts_id = posts_id
           @@cached_instance = build_instance
@@ -514,7 +514,7 @@ module API
         settings_nonce = Ktistec::Settings.nonce
         mau_timestamp = WellKnownController.cached_mau_count.timestamp
 
-        if @@cached_settings_nonce != settings_nonce || @@cached_mau_timestamp != mau_timestamp
+        if @@cached_instance.nil? || @@cached_settings_nonce != settings_nonce || @@cached_mau_timestamp != mau_timestamp
           @@cached_settings_nonce = settings_nonce
           @@cached_mau_timestamp = mau_timestamp
           @@cached_instance = build_instance

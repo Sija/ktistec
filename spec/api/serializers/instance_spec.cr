@@ -3,21 +3,21 @@ require "../../../src/api/serializers/instance"
 require "../../spec_helper/base"
 require "../../spec_helper/factory"
 
+private macro with_setting(setting, value)
+  around_each do |example|
+    original = Ktistec.settings.{{setting.id}}
+    Ktistec.settings.{{setting.id}} = {{value}}
+    Ktistec.settings.save
+    example.run
+    Ktistec.settings.{{setting.id}} = original
+    Ktistec.settings.save
+  end
+end
+
 Spectator.describe API::V1::Serializers::Instance do
   setup_spec
 
   before_each { described_class.clear_cache! }
-
-  macro with_setting(setting, value)
-    around_each do |example|
-      original = Ktistec.settings.{{setting.id}}
-      Ktistec.settings.{{setting.id}} = {{value}}
-      Ktistec.settings.save
-      example.run
-      Ktistec.settings.{{setting.id}} = original
-      Ktistec.settings.save
-    end
-  end
 
   describe ".current" do
     subject { described_class.current }
@@ -268,17 +268,6 @@ Spectator.describe API::V2::Serializers::Instance do
   setup_spec
 
   before_each { described_class.clear_cache! }
-
-  macro with_setting(setting, value)
-    around_each do |example|
-      original = Ktistec.settings.{{setting.id}}
-      Ktistec.settings.{{setting.id}} = {{value}}
-      Ktistec.settings.save
-      example.run
-      Ktistec.settings.{{setting.id}} = original
-      Ktistec.settings.save
-    end
-  end
 
   describe ".current" do
     subject { described_class.current }
