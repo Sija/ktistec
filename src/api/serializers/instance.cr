@@ -5,6 +5,259 @@ require "../../models/account"
 require "../../controllers/well_known"
 
 module API
+  module V1::Serializers
+    # Serializes instance metadata to Mastodon Instance v1 JSON format.
+    #
+    # See: https://docs.joinmastodon.org/entities/V1_Instance/
+    #
+    # Note: v1 was deprecated in Mastodon 4.0.0 (2022) but retained
+    # for compatibility.
+    #
+    struct Instance
+      include JSON::Serializable
+
+      property uri : String
+      property title : String
+      property short_description : String
+      property description : String
+      property email : String
+      property version : String
+      property urls : Urls
+      property stats : Stats
+      @[JSON::Field(emit_null: true)]
+      property thumbnail : String?
+      property languages : Array(String)
+      property registrations : Bool
+      property approval_required : Bool
+      property invites_enabled : Bool
+      property configuration : Configuration
+      @[JSON::Field(emit_null: true)]
+      property contact_account : Nil
+      property rules : Array(Rule)
+
+      def initialize(
+        @uri : String,
+        @title : String,
+        @short_description : String,
+        @description : String,
+        @email : String,
+        @version : String,
+        @urls : Urls,
+        @stats : Stats,
+        @thumbnail : String?,
+        @languages : Array(String),
+        @registrations : Bool,
+        @approval_required : Bool,
+        @invites_enabled : Bool,
+        @configuration : Configuration,
+        @contact_account : Nil,
+        @rules : Array(Rule),
+      )
+      end
+
+      struct Urls
+        include JSON::Serializable
+
+        property streaming_api : String
+
+        def initialize(@streaming_api : String)
+        end
+      end
+
+      struct Stats
+        include JSON::Serializable
+
+        property user_count : Int64
+        property status_count : Int64
+        property domain_count : Int64
+
+        def initialize(
+          @user_count : Int64,
+          @status_count : Int64,
+          @domain_count : Int64,
+        )
+        end
+      end
+
+      struct Configuration
+        include JSON::Serializable
+
+        property accounts : Accounts
+        property statuses : Statuses
+        property media_attachments : MediaAttachments
+        property polls : Polls
+
+        def initialize(
+          @accounts : Accounts,
+          @statuses : Statuses,
+          @media_attachments : MediaAttachments,
+          @polls : Polls,
+        )
+        end
+
+        struct Accounts
+          include JSON::Serializable
+
+          property max_featured_tags : Int32
+
+          def initialize(@max_featured_tags : Int32)
+          end
+        end
+
+        struct Statuses
+          include JSON::Serializable
+
+          property max_characters : Int32
+          property max_media_attachments : Int32
+          property characters_reserved_per_url : Int32
+
+          def initialize(
+            @max_characters : Int32,
+            @max_media_attachments : Int32,
+            @characters_reserved_per_url : Int32,
+          )
+          end
+        end
+
+        struct MediaAttachments
+          include JSON::Serializable
+
+          property supported_mime_types : Array(String)
+          property image_size_limit : Int32
+          property image_matrix_limit : Int32
+          property video_size_limit : Int32
+          property video_frame_rate_limit : Int32
+          property video_matrix_limit : Int32
+
+          def initialize(
+            @supported_mime_types : Array(String),
+            @image_size_limit : Int32,
+            @image_matrix_limit : Int32,
+            @video_size_limit : Int32,
+            @video_frame_rate_limit : Int32,
+            @video_matrix_limit : Int32,
+          )
+          end
+        end
+
+        struct Polls
+          include JSON::Serializable
+
+          property max_options : Int32
+          property max_characters_per_option : Int32
+          property min_expiration : Int32
+          property max_expiration : Int32
+
+          def initialize(
+            @max_options : Int32,
+            @max_characters_per_option : Int32,
+            @min_expiration : Int32,
+            @max_expiration : Int32,
+          )
+          end
+        end
+      end
+
+      struct Rule
+        include JSON::Serializable
+
+        property id : String
+        property text : String
+
+        def initialize(@id : String, @text : String)
+        end
+      end
+
+      @@cached_instance : Instance?
+      @@cached_settings_nonce : Int64 = 0
+      @@cached_posts_id : Int64 = 0
+
+      # Clears the cached instance.
+      #
+      # For testing.
+      #
+      def self.clear_cache!
+        @@cached_instance = nil
+        @@cached_settings_nonce = 0
+        @@cached_posts_id = 0
+      end
+
+      # Returns the cached Instance, rebuilding only when settings or
+      # posts change.
+      #
+      def self.current : Instance
+        settings_nonce = Ktistec::Settings.nonce
+        posts_id = WellKnownController.cached_posts_count.id
+
+        if @@cached_settings_nonce != settings_nonce || @@cached_posts_id != posts_id
+          @@cached_settings_nonce = settings_nonce
+          @@cached_posts_id = posts_id
+          @@cached_instance = build_instance
+        end
+
+        @@cached_instance.not_nil!
+      end
+
+      SUPPORTED_MEDIA_TYPES =
+        Ktistec::Constants::SUPPORTED_IMAGE_TYPES +
+          Ktistec::Constants::SUPPORTED_VIDEO_TYPES +
+          Ktistec::Constants::SUPPORTED_AUDIO_TYPES
+
+      private def self.build_instance : Instance
+        domain = URI.parse(Ktistec.host).host.not_nil!
+        description = Ktistec.settings.description || ""
+
+        Instance.new(
+          uri: domain,
+          title: Ktistec.site,
+          short_description: description,
+          description: description,
+          thumbnail: Ktistec.settings.image.presence,
+          languages: Account.all.compact_map(&.language),
+          version: "4.2.0 (compatible; Ktistec #{Ktistec::VERSION})",
+          stats: Stats.new(
+            user_count: Account.count,
+            status_count: WellKnownController.local_posts,
+            domain_count: 0
+          ),
+          email: "",
+          registrations: false,
+          approval_required: false,
+          invites_enabled: false,
+          contact_account: nil,
+          rules: [] of Rule,
+          urls: Urls.new(
+            streaming_api: ""
+          ),
+          configuration: Configuration.new(
+            accounts: Configuration::Accounts.new(
+              max_featured_tags: 0
+            ),
+            statuses: Configuration::Statuses.new(
+              max_characters: Ktistec::Constants::MAX_POST_CHARACTERS,
+              max_media_attachments: Ktistec::Constants::MAX_MEDIA_ATTACHMENTS,
+              characters_reserved_per_url: 0
+            ),
+            media_attachments: Configuration::MediaAttachments.new(
+              supported_mime_types: SUPPORTED_MEDIA_TYPES,
+              image_size_limit: Ktistec::Constants::IMAGE_SIZE_LIMIT,
+              image_matrix_limit: 0,
+              video_size_limit: 0,
+              video_frame_rate_limit: 0,
+              video_matrix_limit: 0
+            ),
+            polls: Configuration::Polls.new(
+              max_options: Ktistec::Constants::MAX_POLL_OPTIONS,
+              max_characters_per_option: Ktistec::Constants::MAX_POLL_OPTION_CHARACTERS,
+              min_expiration: Ktistec::Constants::MIN_POLL_EXPIRATION,
+              max_expiration: Ktistec::Constants::MAX_POLL_EXPIRATION
+            )
+          )
+        )
+      end
+    end
+  end
+
   module V2::Serializers
     # Serializes instance metadata to Mastodon Instance v2 JSON format.
     #
