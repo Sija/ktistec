@@ -273,7 +273,7 @@ Spectator.describe OAuth2Controller do
 
     let_create(oauth2_provider_client, named: test_client)
 
-    def make_authorization_code(client_id = test_client.client_id, redirect_uri = "https://example.com/callback", code_challenge = code_challenge, code_challenge_method = "S256", expires_at = Time.utc + 1.minute)
+    def make_authorization_code(client_id = test_client.client_id, redirect_uri = "https://example.com/callback", code_challenge = code_challenge, code_challenge_method = "S256", expires_at = Time.utc + 1.minute, scope = "mcp")
       OAuth2Controller::AuthorizationCode.new(
         account_id: account.id.not_nil!,
         client_id: client_id,
@@ -281,6 +281,7 @@ Spectator.describe OAuth2Controller do
         code_challenge: code_challenge,
         code_challenge_method: code_challenge_method,
         expires_at: expires_at,
+        scope: scope,
       )
     end
 
@@ -298,6 +299,17 @@ Spectator.describe OAuth2Controller do
         expect(json_body["access_token"]?).not_to be_nil
         expect(json_body["token_type"]?).to eq("Bearer")
         expect(json_body["expires_in"]?).to eq(3600 * 24 * 30)
+      end
+
+      context "with requested scope" do
+        let(auth_code) { make_authorization_code(scope: "read write follow push") }
+
+        it "returns token with the requested scope" do
+          post "/oauth/token", headers: HTML_HEADERS, body: body
+          expect(response.status_code).to eq(200)
+          json_body = JSON.parse(response.body)
+          expect(json_body["scope"]?).to eq("read write follow push")
+        end
       end
 
       it "updates the client's last_accessed_at timestamp" do
@@ -419,6 +431,17 @@ Spectator.describe OAuth2Controller do
         expect(json_body["access_token"]?).not_to be_nil
         expect(json_body["token_type"]?).to eq("Bearer")
         expect(json_body["expires_in"]?).to eq(3600 * 24 * 30)
+      end
+
+      context "with requested scope" do
+        let(auth_code) { make_authorization_code(scope: "read write follow push") }
+
+        it "returns token with the requested scope" do
+          post "/oauth/token", headers: JSON_HEADERS, body: body
+          expect(response.status_code).to eq(200)
+          json_body = JSON.parse(response.body)
+          expect(json_body["scope"]?).to eq("read write follow push")
+        end
       end
 
       it "updates the client's last_accessed_at timestamp" do

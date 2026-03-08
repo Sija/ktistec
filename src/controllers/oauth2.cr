@@ -85,7 +85,8 @@ class OAuth2Controller
     redirect_uri : String,
     code_challenge : String?,
     code_challenge_method : String?,
-    expires_at : Time
+    expires_at : Time,
+    scope : String
 
   class_property authorization_codes = {} of String => AuthorizationCode
 
@@ -151,6 +152,7 @@ class OAuth2Controller
     redirect_uri = env.params.body["redirect_uri"]?.presence
     response_type = env.params.body["response_type"]?.presence
     state = env.params.body["state"]?.presence
+    scope = env.params.body["scope"]? || "mcp"
 
     Log.trace do
       "authorize[POST]: " \
@@ -207,7 +209,8 @@ class OAuth2Controller
         redirect_uri: redirect_uri,
         code_challenge: code_challenge,
         code_challenge_method: code_challenge_method,
-        expires_at: Time.utc + 10.minutes
+        expires_at: Time.utc + 10.minutes,
+        scope: scope,
       )
 
       redirect_uri = URI.parse(redirect_uri)
@@ -334,7 +337,7 @@ class OAuth2Controller
       client_id: client.id,
       account_id: auth_code.account_id,
       expires_at: Time.utc + 30.days,
-      scope: "mcp",
+      scope: auth_code.scope,
     ).save
 
     {
