@@ -10,6 +10,13 @@ Spectator.describe APIController do
   JSON_HEADERS = HTTP::Headers{"Content-Type" => "application/json", "Accept" => "application/json"}
   FORM_HEADERS = HTTP::Headers{"Content-Type" => "application/x-www-form-urlencoded", "Accept" => "application/json"}
 
+  def bearer_headers(token)
+    HTTP::Headers{"Authorization" => "Bearer #{token}", "Accept" => "application/json"}
+  end
+
+  let(account) { register }
+  let_create(:oauth2_provider_client, named: :client)
+
   describe "OPTIONS /api/v1/apps" do
     it "returns 204" do
       options "/api/v1/apps"
@@ -304,13 +311,7 @@ Spectator.describe APIController do
   end
 
   describe "GET /api/v1/accounts/verify_credentials" do
-    let(account) { register }
     let(actor) { account.actor }
-    let_create(:oauth2_provider_client, named: :client)
-
-    def bearer_headers(token)
-      HTTP::Headers{"Authorization" => "Bearer #{token}", "Accept" => "application/json"}
-    end
 
     it "returns 401" do
       get "/api/v1/accounts/verify_credentials", headers: JSON_HEADERS
@@ -359,6 +360,137 @@ Spectator.describe APIController do
         get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
         json = JSON.parse(response.body)
         expect(json.dig?("source", "language")).to eq("en")
+      end
+    end
+  end
+
+  describe "GET /api/v1/instance/translation_languages" do
+    it "succeeds" do
+      get "/api/v1/instance/translation_languages"
+      expect(response.status_code).to eq(200)
+    end
+
+    it "returns empty object" do
+      get "/api/v1/instance/translation_languages"
+      expect(JSON.parse(response.body)).to eq(JSON.parse("{}"))
+    end
+  end
+
+  describe "GET /api/v1/filters" do
+    it "returns 401" do
+      get "/api/v1/filters"
+      expect(response.status_code).to eq(401)
+    end
+
+    context "with valid user access token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+      it "succeeds" do
+        get "/api/v1/filters", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns empty array" do
+        get "/api/v1/filters", headers: bearer_headers(access_token.token)
+        expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
+      end
+    end
+  end
+
+  describe "GET /api/v2/filters" do
+    it "returns 401" do
+      get "/api/v2/filters"
+      expect(response.status_code).to eq(401)
+    end
+
+    context "with valid user access token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+      it "succeeds" do
+        get "/api/v2/filters", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns empty array" do
+        get "/api/v2/filters", headers: bearer_headers(access_token.token)
+        expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
+      end
+    end
+  end
+
+  describe "GET /api/v1/markers" do
+    it "returns 401" do
+      get "/api/v1/markers"
+      expect(response.status_code).to eq(401)
+    end
+
+    context "with valid user access token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+      it "succeeds" do
+        get "/api/v1/markers", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns empty object" do
+        get "/api/v1/markers", headers: bearer_headers(access_token.token)
+        expect(JSON.parse(response.body)).to eq(JSON.parse("{}"))
+      end
+    end
+  end
+
+  describe "GET /api/v2/notifications/policy" do
+    it "returns 401" do
+      get "/api/v2/notifications/policy"
+      expect(response.status_code).to eq(401)
+    end
+
+    context "with valid user access token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+      it "succeeds" do
+        get "/api/v2/notifications/policy", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns for_not_followers" do
+        get "/api/v2/notifications/policy", headers: bearer_headers(access_token.token)
+        json = JSON.parse(response.body)
+        expect(json["for_not_followers"]).to eq("accept")
+      end
+
+      it "returns for_not_following" do
+        get "/api/v2/notifications/policy", headers: bearer_headers(access_token.token)
+        json = JSON.parse(response.body)
+        expect(json["for_not_following"]).to eq("accept")
+      end
+
+      it "returns summary with pending counts" do
+        get "/api/v2/notifications/policy", headers: bearer_headers(access_token.token)
+        json = JSON.parse(response.body)
+        expect(json.dig("summary", "pending_requests_count")).to eq(0)
+        expect(json.dig("summary", "pending_notifications_count")).to eq(0)
+      end
+    end
+  end
+
+  describe "GET /api/v1/notifications" do
+    it "returns 401" do
+      get "/api/v1/notifications"
+      expect(response.status_code).to eq(401)
+    end
+
+    context "with valid user access token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+      it "succeeds" do
+        get "/api/v1/notifications", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns empty array" do
+        get "/api/v1/notifications", headers: bearer_headers(access_token.token)
+        expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
       end
     end
   end

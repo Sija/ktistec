@@ -10,7 +10,7 @@ class APIController
   Log = ::Log.for("api")
 
   skip_auth ["/api/v1/apps"], OPTIONS, POST
-  skip_auth ["/api/v1/instance", "/api/v2/instance"], GET
+  skip_auth ["/api/v1/instance", "/api/v2/instance", "/api/v1/instance/translation_languages"], GET
 
   private macro set_headers
     env.response.headers.add("Access-Control-Allow-Origin", "*")
@@ -121,5 +121,79 @@ class APIController
     end
 
     API::V1::Serializers::Account.from_account(account, account.actor, include_source: true).to_json
+  end
+
+  # stub endpoints to prevent 404 errors during client initialization
+
+  get "/api/v1/instance/translation_languages" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    "{}"
+  end
+
+  get "/api/v1/filters" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    unless env.account?
+      unauthorized "api/error", error: "The access token is invalid"
+    end
+
+    "[]"
+  end
+
+  get "/api/v2/filters" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    unless env.account?
+      unauthorized "api/error", error: "The access token is invalid"
+    end
+
+    "[]"
+  end
+
+  get "/api/v1/markers" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    unless env.account?
+      unauthorized "api/error", error: "The access token is invalid"
+    end
+
+    "{}"
+  end
+
+  get "/api/v2/notifications/policy" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    unless env.account?
+      unauthorized "api/error", error: "The access token is invalid"
+    end
+
+    {
+      for_not_following:    "accept",
+      for_not_followers:    "accept",
+      for_new_accounts:     "accept",
+      for_private_mentions: "accept",
+      for_limited_accounts: "filter",
+      summary:              {
+        pending_requests_count:      0,
+        pending_notifications_count: 0,
+      },
+    }.to_json
+  end
+
+  get "/api/v1/notifications" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    unless env.account?
+      unauthorized "api/error", error: "The access token is invalid"
+    end
+
+    "[]"
   end
 end
