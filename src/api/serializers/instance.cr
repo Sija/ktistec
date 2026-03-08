@@ -213,10 +213,10 @@ module API
           short_description: description,
           description: description,
           thumbnail: Ktistec.settings.image.presence,
-          languages: Account.all.compact_map(&.language),
+          languages: ::Account.all.compact_map(&.language),
           version: "4.2.0 (compatible; Ktistec #{Ktistec::VERSION})",
           stats: Stats.new(
-            user_count: Account.count,
+            user_count: ::Account.count,
             status_count: WellKnownController.local_posts,
             domain_count: 0
           ),
@@ -546,7 +546,7 @@ module API
             url: Ktistec.settings.image || ""
           ),
           icon: [] of Icon,
-          languages: Account.all.compact_map(&.language),
+          languages: ::Account.all.compact_map(&.language),
           configuration: Configuration.new(
             urls: Configuration::Urls.new(
               streaming: ""
