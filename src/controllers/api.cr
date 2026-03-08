@@ -2,6 +2,7 @@ require "../framework/controller"
 require "../services/oauth2/client_registration"
 require "../api/serializers/application"
 require "../api/serializers/instance"
+require "../api/serializers/account"
 
 class APIController
   include Ktistec::Controller
@@ -109,5 +110,16 @@ class APIController
     env.response.content_type = "application/json"
 
     API::V2::Serializers::Instance.current.to_json
+  end
+
+  get "/api/v1/accounts/verify_credentials" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    unless (account = env.account?)
+      unauthorized "api/error", error: "The access token is invalid"
+    end
+
+    API::V1::Serializers::Account.from_account(account, account.actor, include_source: true).to_json
   end
 end

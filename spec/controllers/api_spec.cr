@@ -302,4 +302,64 @@ Spectator.describe APIController do
       expect(json["domain"].as_s).to eq("test.test")
     end
   end
+
+  describe "GET /api/v1/accounts/verify_credentials" do
+    let(account) { register }
+    let(actor) { account.actor }
+    let_create(:oauth2_provider_client, named: :client)
+
+    def bearer_headers(token)
+      HTTP::Headers{"Authorization" => "Bearer #{token}", "Accept" => "application/json"}
+    end
+
+    it "returns 401" do
+      get "/api/v1/accounts/verify_credentials", headers: JSON_HEADERS
+      expect(response.status_code).to eq(401)
+    end
+
+    context "with invalid token" do
+      it "returns 401" do
+        get "/api/v1/accounts/verify_credentials", headers: bearer_headers("invalid_token")
+        expect(response.status_code).to eq(401)
+      end
+    end
+
+    context "with expired token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account, expires_at: 1.day.ago)
+
+      it "returns 401" do
+        get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(401)
+      end
+    end
+
+    context "with valid app token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client) # account is nil
+
+      it "returns 401" do
+        get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(401)
+      end
+    end
+
+    context "with valid user token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+      it "succeeds" do
+        get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns JSON" do
+        get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+        expect(response.headers["Content-Type"]?).to eq("application/json")
+      end
+
+      it "includes source.language" do
+        get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+        json = JSON.parse(response.body)
+        expect(json.dig?("source", "language")).to eq("en")
+      end
+    end
+  end
 end
