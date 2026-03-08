@@ -343,8 +343,9 @@ class OAuth2Controller
     {
       token_type:   "Bearer",
       access_token: access_token.token,
-      expires_in:   30.days.to_i,
       scope:        access_token.scope,
+      created_at:   access_token.created_at.to_unix,
+      expires_in:   30.days.to_i,
     }.to_json
   end
 end
