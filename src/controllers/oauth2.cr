@@ -83,8 +83,8 @@ class OAuth2Controller
     account_id : Int64,
     client_id : String,
     redirect_uri : String,
-    code_challenge : String,
-    code_challenge_method : String,
+    code_challenge : String?,
+    code_challenge_method : String?,
     expires_at : Time
 
   class_property authorization_codes = {} of String => AuthorizationCode
@@ -106,13 +106,10 @@ class OAuth2Controller
     end
 
     code_challenge = env.params.query["code_challenge"]?.presence
-    unless code_challenge
-      Log.debug { "`code_challenge` is required" }
-      bad_request "`code_challenge` is required"
-    end
-
     code_challenge_method = env.params.query["code_challenge_method"]?.presence
-    unless code_challenge_method == "S256"
+
+    # PKCE is optional, but if code_challenge is provided, method must be S256
+    if code_challenge && code_challenge_method != "S256"
       Log.debug { "Unsupported `code_challenge_method`: #{code_challenge_method}" }
       bad_request "Unsupported `code_challenge_method`"
     end
@@ -164,13 +161,10 @@ class OAuth2Controller
     end
 
     code_challenge = env.params.body["code_challenge"]?.presence
-    unless code_challenge
-      Log.debug { "`code_challenge` is required" }
-      bad_request "`code_challenge` is required"
-    end
-
     code_challenge_method = env.params.body["code_challenge_method"]?.presence
-    unless code_challenge_method && code_challenge_method == "S256"
+
+    # PKCE is optional, but if code_challenge is provided, method must be S256
+    if code_challenge && code_challenge_method != "S256"
       Log.debug { "Unsupported `code_challenge_method`: #{code_challenge_method}" }
       bad_request "Unsupported `code_challenge_method`"
     end
@@ -285,15 +279,18 @@ class OAuth2Controller
       bad_request "Invalid `redirect_uri`"
     end
 
-    unless code_verifier
-      Log.debug { "`code_verifier` is required" }
-      bad_request "`code_verifier` is required"
-    end
+    # PKCE verification is only required if code_challenge was provided during authorization
+    if auth_code.code_challenge
+      unless code_verifier
+        Log.debug { "`code_verifier` is required" }
+        bad_request "`code_verifier` is required"
+      end
 
-    code_challenge = Base64.urlsafe_encode(Digest::SHA256.digest(code_verifier), padding: false)
-    unless code_challenge == auth_code.code_challenge
-      Log.debug { "Invalid `code_verifier`" }
-      bad_request "Invalid `code_verifier`"
+      computed_challenge = Base64.urlsafe_encode(Digest::SHA256.digest(code_verifier), padding: false)
+      unless computed_challenge == auth_code.code_challenge
+        Log.debug { "Invalid `code_verifier`" }
+        bad_request "Invalid `code_verifier`"
+      end
     end
 
     client_id_param = client_id

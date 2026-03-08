@@ -85,9 +85,10 @@ Spectator.describe OAuth2Controller do
       context "without a code_challenge" do
         let(query) { super.gsub(/&code_challenge=(.+?)&/, "&") }
 
-        it "returns a bad request" do
+        it "renders the consent screen" do
           get "/oauth/authorize?#{query}", headers: HTML_HEADERS
-          expect(response.status_code).to eq(400)
+          expect(response.status_code).to eq(200)
+          expect(response.body).to contain(client.client_name)
         end
       end
 
@@ -177,9 +178,11 @@ Spectator.describe OAuth2Controller do
       context "without a code_challenge" do
         let(body) { super.gsub(/&code_challenge=(.+?)&/, "&") }
 
-        it "returns a bad request" do
+        it "redirects with a code" do
           post "/oauth/authorize", headers: HTML_HEADERS, body: body
-          expect(response.status_code).to eq(400)
+          expect(response.status_code).to eq(302)
+          expect(response.headers["Location"]).to match(%r|code=[a-zA-Z0-9+/_-]+|)
+          expect(response.headers["Location"]).to contain("state=#{state}")
         end
       end
 
@@ -388,6 +391,21 @@ Spectator.describe OAuth2Controller do
       it "returns an error with an invalid code_verifier" do
         post "/oauth/token", headers: HTML_HEADERS, body: body.gsub("code_verifier=#{code_verifier}", "code_verifier=invalid")
         expect(response.status_code).to eq(400)
+      end
+    end
+
+    # `code_challenge` not provided during authorization
+    context "without PKCE" do
+      let(auth_code) { make_authorization_code(code_challenge: nil, code_challenge_method: nil) }
+      let(body) { "grant_type=authorization_code&code=#{code}&client_id=#{auth_code.client_id}&client_secret=#{test_client.client_secret}&redirect_uri=#{auth_code.redirect_uri}" }
+
+      it "returns an access token" do
+        expect { post "/oauth/token", headers: HTML_HEADERS, body: body }.to change { OAuth2::Provider::AccessToken.count }.by(1)
+        expect(response.status_code).to eq(200)
+        json_body = JSON.parse(response.body)
+        expect(json_body["access_token"]?).not_to be_nil
+        expect(json_body["token_type"]?).to eq("Bearer")
+        expect(json_body["expires_in"]?).to eq(3600 * 24 * 30)
       end
     end
 
