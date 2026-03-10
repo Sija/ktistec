@@ -419,6 +419,48 @@ Spectator.describe APIController do
     end
   end
 
+  describe "GET /api/v1/statuses/:id" do
+    let(actor) { account.actor }
+    let_create(:actor, named: :other, local: true)
+    let_create(:object, named: :status, attributed_to: other, published: Time.utc, visible: true)
+
+    it "returns 401" do
+      get "/api/v1/statuses/#{status.id}", headers: JSON_HEADERS
+      expect(response.status_code).to eq(401)
+    end
+
+    context "with valid user token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+      it "succeeds" do
+        get "/api/v1/statuses/#{status.id}", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns JSON" do
+        get "/api/v1/statuses/#{status.id}", headers: bearer_headers(access_token.token)
+        expect(response.headers["Content-Type"]?).to eq("application/json")
+      end
+
+      it "includes id" do
+        get "/api/v1/statuses/#{status.id}", headers: bearer_headers(access_token.token)
+        json = JSON.parse(response.body)
+        expect(json["id"]).to eq(status.id.to_s)
+      end
+
+      it "includes account.id" do
+        get "/api/v1/statuses/#{status.id}", headers: bearer_headers(access_token.token)
+        json = JSON.parse(response.body)
+        expect(json["account"]["id"]).to eq(other.id.to_s)
+      end
+
+      it "returns 404 for non-existent status" do
+        get "/api/v1/statuses/999999", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(404)
+      end
+    end
+  end
+
   describe "GET /api/v1/instance/translation_languages" do
     it "succeeds" do
       get "/api/v1/instance/translation_languages"
