@@ -1,8 +1,10 @@
 require "../framework/controller"
+require "../models/activity_pub/object"
 require "../services/oauth2/client_registration"
 require "../api/serializers/application"
 require "../api/serializers/instance"
 require "../api/serializers/account"
+require "../api/serializers/status"
 
 class APIController
   include Ktistec::Controller
@@ -121,6 +123,25 @@ class APIController
     end
 
     API::V1::Serializers::Account.from_account(account, account.actor, include_source: true).to_json
+  end
+
+  get "/api/v1/timelines/home" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    unless (account = env.account?)
+      unauthorized "api/error", error: "The access token is invalid"
+    end
+
+    actor = account.actor
+    limit = (env.params.query["limit"]?.try(&.to_i?) || 20).clamp(1, 100)
+
+    timeline = actor.timeline(page: 1, size: limit)
+    statuses = timeline.map do |entry|
+      API::V1::Serializers::Status.from_object(entry.object)
+    end
+
+    statuses.to_a.to_json
   end
 
   # stub endpoints to prevent 404 errors during client initialization

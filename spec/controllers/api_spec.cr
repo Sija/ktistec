@@ -364,6 +364,61 @@ Spectator.describe APIController do
     end
   end
 
+  describe "GET /api/v1/timelines/home" do
+    let(actor) { account.actor }
+
+    it "returns 401" do
+      get "/api/v1/timelines/home", headers: JSON_HEADERS
+      expect(response.status_code).to eq(401)
+    end
+
+    context "with valid user token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+      it "succeeds" do
+        get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns JSON" do
+        get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+        expect(response.headers["Content-Type"]?).to eq("application/json")
+      end
+
+      it "returns empty array" do
+        get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+        expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
+      end
+
+      context "with timeline items" do
+        let_create(:actor, named: :other_actor, local: true)
+        let_create(:object, named: :post, attributed_to: other_actor, published: Time.utc, visible: true)
+
+        before_each do
+          put_in_timeline(actor, post)
+        end
+
+        it "returns statuses" do
+          get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.size).to eq(1)
+        end
+
+        it "includes id" do
+          get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json[0]["id"]).to eq(post.id.to_s)
+        end
+
+        it "includes account.id" do
+          get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json[0]["account"]["id"]).to eq(other_actor.id.to_s)
+        end
+      end
+    end
+  end
+
   describe "GET /api/v1/instance/translation_languages" do
     it "succeeds" do
       get "/api/v1/instance/translation_languages"
