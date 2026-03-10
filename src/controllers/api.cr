@@ -161,6 +161,31 @@ class APIController
     API::V1::Serializers::Status.from_object(object).to_json
   end
 
+  get "/api/v1/statuses/:id/context" do |env|
+    env.response.headers.add("Access-Control-Allow-Origin", "*")
+    env.response.content_type = "application/json"
+
+    unless env.account?
+      unauthorized "api/error", error: "The access token is invalid"
+    end
+
+    id = env.params.url["id"].to_i64
+
+    unless (object = ActivityPub::Object.find?(id))
+      not_found "api/error", error: "Record not found"
+    end
+
+    ancestors = object.ancestors.reject(&.id.== object.id).map do |ancestor|
+      API::V1::Serializers::Status.from_object(ancestor)
+    end
+
+    descendants = object.descendants.reject(&.id.== object.id).map do |descendant|
+      API::V1::Serializers::Status.from_object(descendant)
+    end
+
+    {ancestors: ancestors, descendants: descendants}.to_json
+  end
+
   # stub endpoints to prevent 404 errors during client initialization
 
   get "/api/v1/instance/translation_languages" do |env|
