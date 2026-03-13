@@ -1530,6 +1530,81 @@ Spectator.describe "helpers" do
     end
   end
 
+  describe "cursor_pagination_params" do
+    it "defaults to nil" do
+      env = make_env("GET", "/")
+      result = self.class.cursor_pagination_params(env)
+      expect(result[:max_id]).to be_nil
+      expect(result[:min_id]).to be_nil
+    end
+
+    it "parses max_id" do
+      env = make_env("GET", "/?max_id=12345")
+      result = self.class.cursor_pagination_params(env)
+      expect(result[:max_id]).to eq(12345_i64)
+    end
+
+    it "parses min_id" do
+      env = make_env("GET", "/?min_id=11111")
+      result = self.class.cursor_pagination_params(env)
+      expect(result[:min_id]).to eq(11111_i64)
+    end
+
+    it "parses limit" do
+      env = make_env("GET", "/?limit=20")
+      result = self.class.cursor_pagination_params(env)
+      expect(result[:limit]).to eq(20)
+    end
+
+    it "ensures limit is at least 1" do
+      env = make_env("GET", "/?limit=0")
+      result = self.class.cursor_pagination_params(env)
+      expect(result[:limit]).to eq(1)
+    end
+
+    it "ignores negative limit" do
+      env = make_env("GET", "/?limit=-5")
+      result = self.class.cursor_pagination_params(env)
+      expect(result[:limit]).to eq(1)
+    end
+
+    it "defaults limit to 10" do
+      env = make_env("GET", "/")
+      result = self.class.cursor_pagination_params(env)
+      expect(result[:limit]).to eq(10)
+    end
+
+    context "when user is not authenticated" do
+      it "allows limit up to 20" do
+        env = make_env("GET", "/?limit=20")
+        result = self.class.cursor_pagination_params(env)
+        expect(result[:limit]).to eq(20)
+      end
+
+      it "limits limit to 20" do
+        env = make_env("GET", "/?limit=50")
+        result = self.class.cursor_pagination_params(env)
+        expect(result[:limit]).to eq(20)
+      end
+    end
+
+    context "when user is authenticated" do
+      sign_in
+
+      it "allows limit up to 1000" do
+        env = make_env("GET", "/?limit=1000")
+        result = self.class.cursor_pagination_params(env)
+        expect(result[:limit]).to eq(1000)
+      end
+
+      it "limits limit to 1000" do
+        env = make_env("GET", "/?limit=1001")
+        result = self.class.cursor_pagination_params(env)
+        expect(result[:limit]).to eq(1000)
+      end
+    end
+  end
+
   # Path helpers
 
   double :path_double do

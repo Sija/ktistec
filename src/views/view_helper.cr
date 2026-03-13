@@ -189,6 +189,15 @@ module Ktistec::ViewHelper
       }
     end
 
+    def cursor_pagination_params(env)
+      max_limit = env.account? ? 1000 : 20
+      {
+        max_id: env.params.query["max_id"]?.try(&.to_i64),
+        min_id: env.params.query["min_id"]?.try(&.to_i64),
+        limit:  Math.min(Math.max(env.params.query["limit"]?.try(&.to_i) || 10, 1), max_limit),
+      }
+    end
+
     def paginate(env, collection)
       query = env.params.query
       page = (p = query["page"]?) && (p = p.to_i) > 0 ? p : 1
