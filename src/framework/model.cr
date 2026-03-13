@@ -300,6 +300,18 @@ module Ktistec
         {% end %}
       end
 
+      # Executes an offset-based paginated query.
+      #
+      # The query must include `LIMIT ? OFFSET ?` placeholders as the
+      # last two bind parameters.
+      #
+      # Parameters:
+      # - `query`: SQL query
+      # - `*args`: Bind parameters for the query
+      # - `page`: Page number (default 1, 1-indexed)
+      # - `size`: Number of items per page (default 10)
+      # - `additional_columns`: Extra columns to read from the result set
+      #
       protected def query_and_paginate(query, *args, additional_columns = NamedTuple.new, page = 1, size = 10)
         Internal.log_query(query, {*args, size.to_i + 1, ((page - 1) * size).to_i}) do
           Ktistec::Util::PaginatedArray(self).new.tap do |array|
@@ -311,6 +323,73 @@ module Ktistec
             if array.size > size
               array.more = true
               array.pop
+            end
+          end
+        end
+      end
+
+      # Executes a cursor-based paginated query.
+      #
+      # The query must include a placeholder `%{cursor_condition}`
+      # where cursor filtering conditions will be inserted, and must
+      # not include `ORDER BY` or `LIMIT` clauses (which are added
+      # automatically).
+      #
+      # Parameters:
+      # - `query`: SQL query
+      # - `*args`: Bind parameters for the query
+      # - `cursor_column`: The column to use for cursor filtering and ordering
+      # - `max_id`: Return items older than this
+      # - `min_id`: Return items newer than this
+      # - `limit`: Maximum number of items to return (default 10)
+      # - `additional_columns`: Extra columns to read from the result set
+      #
+      # Results are always returned in descending order (newest first).
+      #
+      protected def query_with_cursor(
+        query : String,
+        *args,
+        cursor_column : String,
+        max_id : Int64? = nil,
+        min_id : Int64? = nil,
+        limit : Int32 = 10,
+        additional_columns = NamedTuple.new,
+      )
+        cursor_args = [] of Int64
+        cursor_condition = [] of String
+        if max_id
+          cursor_args << max_id
+          cursor_condition << "#{cursor_column} < ?"
+        end
+        if min_id
+          cursor_args << min_id
+          cursor_condition << "#{cursor_column} > ?"
+        end
+        direction = min_id && !max_id ? "ASC" : "DESC"
+        cursor_condition = cursor_condition.empty? ? "1" : cursor_condition.join(" AND ")
+        query = query % {cursor_condition: cursor_condition}
+        query += " ORDER BY #{cursor_column} #{direction} LIMIT ?"
+        all_args = args.to_a + cursor_args + [limit + 1]
+        Internal.log_query(query, all_args) do
+          result = Ktistec::Util::PaginatedArray(self).new
+          Ktistec.database.query(query, args: all_args) do |rs|
+            rs.each { result << compose(rs, **additional_columns) }
+          end
+          more = false
+          if result.size > limit
+            more = true
+            result.pop
+          end
+          items = result.to_a
+          if min_id && !max_id
+            items = items.reverse
+          end
+          Ktistec::Util::PaginatedArray(self).new(items.size).tap do |array|
+            items.each { |item| array << item }
+            array.more = more
+            if array.size > 0
+              array.cursor_start = array.first.id
+              array.cursor_end = items.last.id
             end
           end
         end
