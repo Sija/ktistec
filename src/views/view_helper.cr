@@ -198,6 +198,17 @@ module Ktistec::ViewHelper
       }
     end
 
+    def link_header(path, collection, limit)
+      links = [] of String
+      if (cursor_start = collection.cursor_start)
+        links << %Q(<#{Ktistec.host}#{path}?min_id=#{cursor_start}&limit=#{limit}>; rel="prev")
+      end
+      if collection.more? && (cursor_end = collection.cursor_end)
+        links << %Q(<#{Ktistec.host}#{path}?max_id=#{cursor_end}&limit=#{limit}>; rel="next")
+      end
+      links.join(", ").presence
+    end
+
     def paginate(env, collection)
       query = env.params.query
       if collection.cursor_start

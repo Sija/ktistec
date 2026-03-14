@@ -1634,6 +1634,37 @@ Spectator.describe "helpers" do
     end
   end
 
+  describe "link_header" do
+    let(collection) { Ktistec::Util::PaginatedArray(String).new }
+
+    it "returns nil" do
+      expect(self.class.link_header("/api/v1/timelines/home", collection, 20)).to be_nil
+    end
+
+    context "with cursor_start" do
+      before_each do
+        collection.cursor_start = 100_i64
+      end
+
+      it "includes prev link" do
+        result = self.class.link_header("/api/v1/timelines/home", collection, 20)
+        expect(result).to eq(%Q(<https://test.test/api/v1/timelines/home?min_id=100&limit=20>; rel="prev"))
+      end
+    end
+
+    context "with cursor_end and more" do
+      before_each do
+        collection.cursor_end = 50_i64
+        collection.more = true
+      end
+
+      it "includes next link" do
+        result = self.class.link_header("/api/v1/timelines/home", collection, 20)
+        expect(result).to contain(%Q(<https://test.test/api/v1/timelines/home?max_id=50&limit=20>; rel="next"))
+      end
+    end
+  end
+
   # Path helpers
 
   double :path_double do
