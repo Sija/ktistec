@@ -447,6 +447,86 @@
       end
     end
 
+    describe "GET /api/v1/timelines/public" do
+      it "returns 401" do
+        get "/api/v1/timelines/public", headers: JSON_HEADERS
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "succeeds" do
+          get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns JSON" do
+          get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+          expect(response.headers["Content-Type"]?).to eq("application/json")
+        end
+
+        it "returns empty array" do
+          get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+          expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
+        end
+
+        it "does not include link header" do
+          get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+          expect(response.headers["Link"]?).to be_nil
+        end
+
+        context "with posts" do
+          let_create(:actor, named: :other, local: true)
+          let_create!(:object, named: :post1, attributed_to: other, published: Time.utc, visible: true)
+          let_create!(:object, named: :post2, attributed_to: other, published: Time.utc, visible: true)
+
+          it "returns statuses" do
+            get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.size).to eq(2)
+          end
+
+          it "includes id" do
+            get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig?("id"))).to eq([post2.id.to_s, post1.id.to_s])
+          end
+
+          it "includes account.id" do
+            get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig?("account", "id"))).to eq([other.id.to_s, other.id.to_s])
+          end
+
+          it "includes prev" do
+            get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+            expect(response.headers["Link"]?).to contain(%Q(rel="prev"))
+          end
+
+          it "includes next" do
+            get "/api/v1/timelines/public?limit=1", headers: bearer_headers(access_token.token)
+            expect(response.headers["Link"]?).to contain(%Q(rel="next"))
+          end
+
+          it "accepts local parameter" do
+            get "/api/v1/timelines/public?local=true", headers: bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+
+          it "accepts remote parameter" do
+            get "/api/v1/timelines/public?remote=true", headers: bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+
+          it "accepts only_media parameter" do
+            get "/api/v1/timelines/public?only_media=true", headers: bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+        end
+      end
+    end
+
     describe "GET /api/v1/statuses/:id" do
       let(actor) { account.actor }
       let_create(:actor, named: :other, local: true)

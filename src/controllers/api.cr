@@ -146,6 +146,29 @@
       statuses.to_a.to_json
     end
 
+    get "/api/v1/timelines/public" do |env|
+      env.response.headers.add("Access-Control-Allow-Origin", "*")
+      env.response.content_type = "application/json"
+
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+
+      params = cursor_pagination_params(env)
+      params = params.merge(limit: params[:limit].clamp(1, 40))
+
+      posts = ActivityPub::Object.federated_posts(**params)
+      statuses = posts.map do |object|
+        API::V1::Serializers::Status.from_object(object)
+      end
+
+      if (link = link_header("/api/v1/timelines/public", statuses, params[:limit]))
+        env.response.headers["Link"] = link
+      end
+
+      statuses.to_a.to_json
+    end
+
     get "/api/v1/statuses/:id" do |env|
       env.response.headers.add("Access-Control-Allow-Origin", "*")
       env.response.content_type = "application/json"
