@@ -401,30 +401,47 @@
           expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
         end
 
+        it "does not include link header" do
+          get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+          expect(response.headers["Link"]?).to be_nil
+        end
+
         context "with timeline items" do
-          let_create(:actor, named: :other_actor, local: true)
-          let_create(:object, named: :post, attributed_to: other_actor, published: Time.utc, visible: true)
+          let_create(:actor, named: :other, local: true)
+          let_create(:object, named: :post1, attributed_to: other, published: Time.utc, visible: true)
+          let_create(:object, named: :post2, attributed_to: other, published: Time.utc, visible: true)
 
           before_each do
-            put_in_timeline(actor, post)
+            put_in_timeline(actor, post1)
+            put_in_timeline(actor, post2)
           end
 
           it "returns statuses" do
             get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
             json = JSON.parse(response.body)
-            expect(json.as_a.size).to eq(1)
+            expect(json.as_a.size).to eq(2)
           end
 
           it "includes id" do
             get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
             json = JSON.parse(response.body)
-            expect(json[0]["id"]).to eq(post.id.to_s)
+            expect(json.as_a.map(&.dig?("id"))).to eq([post2.id.to_s, post1.id.to_s])
           end
 
           it "includes account.id" do
             get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
             json = JSON.parse(response.body)
-            expect(json[0]["account"]["id"]).to eq(other_actor.id.to_s)
+            expect(json.as_a.map(&.dig?("account", "id"))).to eq([other.id.to_s, other.id.to_s])
+          end
+
+          it "includes prev" do
+            get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+            expect(response.headers["Link"]?).to contain(%Q(rel="prev"))
+          end
+
+          it "includes next" do
+            get "/api/v1/timelines/home?limit=1", headers: bearer_headers(access_token.token)
+            expect(response.headers["Link"]?).to contain(%Q(rel="next"))
           end
         end
       end

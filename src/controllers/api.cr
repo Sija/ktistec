@@ -131,12 +131,16 @@
         unauthorized "api/error", error: "The access token is invalid"
       end
 
-      actor = account.actor
-      limit = (env.params.query["limit"]?.try(&.to_i?) || 20).clamp(1, 100)
+      params = cursor_pagination_params(env)
+      params = params.merge(limit: params[:limit].clamp(1, 40))
 
-      timeline = actor.timeline(page: 1, size: limit)
+      timeline = account.actor.timeline(**params)
       statuses = timeline.map do |entry|
         API::V1::Serializers::Status.from_object(entry.object)
+      end
+
+      if (link = link_header("/api/v1/timelines/home", statuses, params[:limit]))
+        env.response.headers["Link"] = link
       end
 
       statuses.to_a.to_json
