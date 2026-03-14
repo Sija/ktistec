@@ -95,19 +95,48 @@ Spectator.describe "helpers" do
       expect(subject.xpath_nodes("/nav[contains(@class,'pagination')]")).to be_empty
     end
 
-    context "with more pages" do
-      before_each { collection.more = true }
+    context "with offset pagination" do
+      context "with more pages" do
+        before_each { collection.more = true }
 
-      it "renders the next link" do
-        expect(subject.xpath_nodes("//a/@href")).to contain_exactly("?page=2")
+        it "renders the next link" do
+          expect(subject.xpath_nodes("//a/@href")).to contain_exactly("?page=2")
+        end
+      end
+
+      context "on the second page" do
+        let(query) { "?page=2" }
+
+        it "renders the prev link" do
+          expect(subject.xpath_nodes("//a/@href")).to contain_exactly("?page=1")
+        end
       end
     end
 
-    context "on the second page" do
-      let(query) { "?page=2" }
+    context "with cursor pagination" do
+      before_each do
+        collection.cursor_start = 100_i64
+        collection.cursor_end = 50_i64
+      end
 
       it "renders the prev link" do
-        expect(subject.xpath_nodes("//a/@href")).to contain_exactly("?page=1")
+        expect(subject.xpath_nodes("//a/@href")).to contain_exactly("?min_id=100")
+      end
+
+      it "does not render the next link" do
+        expect(subject.xpath_nodes("//a/@href")).not_to contain("?max_id=50")
+      end
+
+      context "with more results" do
+        before_each { collection.more = true }
+
+        it "renders the prev link" do
+          expect(subject.xpath_nodes("//a/@href")).to contain("?min_id=100")
+        end
+
+        it "renders the next link" do
+          expect(subject.xpath_nodes("//a/@href")).to contain("?max_id=50")
+        end
       end
     end
   end

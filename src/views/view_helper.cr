@@ -200,8 +200,12 @@ module Ktistec::ViewHelper
 
     def paginate(env, collection)
       query = env.params.query
-      page = (p = query["page"]?) && (p = p.to_i) > 0 ? p : 1
-      render "src/views/partials/paginator.html.slang"
+      if collection.cursor_start
+        render "src/views/partials/cursor_paginator.html.slang"
+      else
+        page = (p = query["page"]?) && (p = p.to_i) > 0 ? p : 1
+        render "src/views/partials/paginator.html.slang"
+      end
     end
 
     PUBLIC = "https://www.w3.org/ns/activitystreams#Public"
