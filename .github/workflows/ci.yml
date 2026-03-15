@@ -27,6 +27,13 @@ jobs:
                sudo apt update && sudo apt install -y lld
           fi
         shell: bash
+      - name: Cache shards
+        uses: actions/cache@v4
+        with:
+          path: lib
+          key: shards-${{ runner.os }}-${{ hashFiles('shard.lock') }}
+          restore-keys: |
+            shards-${{ runner.os }}-
       - name: Install shards
         run: shards install
       - name: Run tests
