@@ -667,7 +667,7 @@ Spectator.describe Ktistec::Model do
     end
 
     it "returns the count of saved instances" do
-      expect(NotNilModel.scalar("SELECT count(*) FROM #{NotNilModel.table_name} WHERE val = ?", ["Val"])).to eq(1)
+      expect(NotNilModel.scalar("SELECT count(*) FROM #{NotNilModel.table_name} WHERE val = ?", args: ["Val"])).to eq(1)
     end
   end
 
@@ -679,7 +679,7 @@ Spectator.describe Ktistec::Model do
     end
 
     it "deletes the saved instances" do
-      expect { NotNilModel.exec("DELETE FROM #{NotNilModel.table_name} WHERE val = ?", ["Val"]) }.to change { NotNilModel.count }.by(-1)
+      expect { NotNilModel.exec("DELETE FROM #{NotNilModel.table_name} WHERE val = ?", args: ["Val"]) }.to change { NotNilModel.count }.by(-1)
     end
 
     it "returns the count of rows affected" do
@@ -687,7 +687,7 @@ Spectator.describe Ktistec::Model do
     end
 
     it "returns the count of rows affected" do
-      expect(NotNilModel.exec("DELETE FROM #{NotNilModel.table_name} WHERE val = ?", ["Val"])).to eq(1)
+      expect(NotNilModel.exec("DELETE FROM #{NotNilModel.table_name} WHERE val = ?", args: ["Val"])).to eq(1)
     end
   end
 
@@ -700,7 +700,7 @@ Spectator.describe Ktistec::Model do
       end
 
       it "returns the saved instances" do
-        expect(NotNilModel.sql("SELECT #{NotNilModel.columns} FROM #{NotNilModel.table_name} WHERE val = ?", ["Val"])).to eq([saved_model])
+        expect(NotNilModel.sql("SELECT #{NotNilModel.columns} FROM #{NotNilModel.table_name} WHERE val = ?", args: ["Val"])).to eq([saved_model])
       end
     end
 
@@ -709,7 +709,7 @@ Spectator.describe Ktistec::Model do
     end
 
     it "returns an empty collection" do
-      expect(NotNilModel.sql("SELECT #{NotNilModel.columns} FROM #{NotNilModel.table_name} WHERE val = ?", ["Val"])).to be_empty
+      expect(NotNilModel.sql("SELECT #{NotNilModel.columns} FROM #{NotNilModel.table_name} WHERE val = ?", args: ["Val"])).to be_empty
     end
   end
 

@@ -316,44 +316,17 @@ module Ktistec
         end
       end
 
-      # specialize the following to avoid a compile bug?
-      # see: https://github.com/crystal-lang/crystal/issues/7164
-
-      protected def query_all(query, *args_, additional_columns = NamedTuple.new)
-        Internal.log_query(query, args_) do
-          Ktistec.database.query_all(
-            query, *args_
-          ) do |rs|
+      protected def query_all(query, *args_, args : Enumerable? = nil, additional_columns = NamedTuple.new)
+        Internal.log_query(query, args || args_) do
+          Ktistec.database.query_all(query, *args_, args: args) do |rs|
             compose(rs, **additional_columns)
           end
         end
       end
 
-      protected def query_all(query, args : Array? = nil, additional_columns = NamedTuple.new)
-        Internal.log_query(query, args) do
-          Ktistec.database.query_all(
-            query, args: args
-          ) do |rs|
-            compose(rs, **additional_columns)
-          end
-        end
-      end
-
-      protected def query_one(query, *args_, additional_columns = NamedTuple.new)
-        Internal.log_query(query, args_) do
-          Ktistec.database.query_one(
-            query, *args_
-          ) do |rs|
-            compose(rs, **additional_columns)
-          end
-        end
-      end
-
-      protected def query_one(query, args : Array? = nil, additional_columns = NamedTuple.new)
-        Internal.log_query(query, args) do
-          Ktistec.database.query_one(
-            query, args: args
-          ) do |rs|
+      protected def query_one(query, *args_, args : Enumerable? = nil, additional_columns = NamedTuple.new)
+        Internal.log_query(query, args || args_) do
+          Ktistec.database.query_one(query, *args_, args: args) do |rs|
             compose(rs, **additional_columns)
           end
         end
@@ -466,19 +439,9 @@ module Ktistec
       #
       # Returns the result.
       #
-      def scalar(query : String, *args_)
-        Internal.log_query(query, args_) do
-          Ktistec.database.scalar(query, *args_)
-        end
-      end
-
-      # Runs the query.
-      #
-      # Returns the result.
-      #
-      def scalar(query : String, args : Array? = nil)
-        Internal.log_query(query, args) do
-          Ktistec.database.scalar(query, args: args)
+      def scalar(query : String, *args_, args : Enumerable? = nil)
+        Internal.log_query(query, args || args_) do
+          Ktistec.database.scalar(query, *args_, args: args)
         end
       end
 
@@ -486,19 +449,9 @@ module Ktistec
       #
       # Returns the number of rows affected.
       #
-      def exec(query : String, *args_)
-        Internal.log_query(query, args_) do
-          Ktistec.database.exec(query, *args_).rows_affected
-        end
-      end
-
-      # Runs the query.
-      #
-      # Returns the number of rows affected.
-      #
-      def exec(query : String, args : Array? = nil)
-        Internal.log_query(query, args) do
-          Ktistec.database.exec(query, args: args).rows_affected
+      def exec(query : String, *args_, args : Enumerable? = nil)
+        Internal.log_query(query, args || args_) do
+          Ktistec.database.exec(query, *args_, args: args).rows_affected
         end
       end
 
@@ -506,8 +459,8 @@ module Ktistec
       #
       # Returns saved instances.
       #
-      def sql(query : String, *arguments)
-        query_all(query, *arguments)
+      def sql(query : String, *arguments, args : Enumerable? = nil)
+        query_all(query, *arguments, args: args)
       end
     end
 
