@@ -619,6 +619,145 @@
       end
     end
 
+    describe "POST /api/v1/statuses" do
+      let(actor) { account.actor }
+
+      it "returns 401" do
+        post "/api/v1/statuses", headers: JSON_HEADERS, body: {"status" => "Hello"}.to_json
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "succeeds" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello world"}.to_json
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns JSON" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello world"}.to_json
+          expect(response.headers["Content-Type"]?).to eq("application/json")
+        end
+
+        it "returns an id" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello world"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["id"].as_s).not_to be_empty
+        end
+
+        it "returns the content" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello world"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["content"].as_s).to contain("Hello world")
+        end
+
+        it "returns the account id" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello world"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["account"]["id"].as_s).to eq(actor.id.to_s)
+        end
+
+        it "defaults visibility to public" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["visibility"].as_s).to eq("public")
+        end
+
+        it "sets visibility to public" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello", "visibility" => "public"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["visibility"].as_s).to eq("public")
+        end
+
+        it "sets visibility to private" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello", "visibility" => "private"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["visibility"].as_s).to eq("private")
+        end
+
+        it "sets visibility to direct" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello", "visibility" => "direct"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["visibility"].as_s).to eq("direct")
+        end
+
+        it "treats unlisted as public" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello", "visibility" => "unlisted"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["visibility"].as_s).to eq("public")
+        end
+
+        it "sets spoiler_text" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello", "spoiler_text" => "CW"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["spoiler_text"].as_s).to eq("CW")
+        end
+
+        it "sets sensitive" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Hello", "sensitive" => true}.to_json
+          json = JSON.parse(response.body)
+          expect(json["sensitive"].as_bool).to be_true
+        end
+
+        it "sets language" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Bonjour", "language" => "fr"}.to_json
+          json = JSON.parse(response.body)
+          expect(json["language"].as_s).to eq("fr")
+        end
+
+        context "with in_reply_to_id" do
+          let_create(:object, named: :parent, attributed_to: actor, published: Time.utc, visible: true)
+
+          it "sets in_reply_to_id" do
+            post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Reply", "in_reply_to_id" => parent.id.to_s}.to_json
+            json = JSON.parse(response.body)
+            expect(json["in_reply_to_id"].as_s).to eq(parent.id.to_s)
+          end
+
+          it "returns 422 for invalid in_reply_to_id" do
+            post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => "Reply", "in_reply_to_id" => "999999"}.to_json
+            expect(response.status_code).to eq(422)
+          end
+        end
+
+        context "with form-encoded body" do
+          it "succeeds" do
+            post "/api/v1/statuses", headers: form_bearer_headers(access_token.token), body: "status=Hello+world"
+            expect(response.status_code).to eq(200)
+          end
+
+          it "returns JSON" do
+            post "/api/v1/statuses", headers: form_bearer_headers(access_token.token), body: "status=Hello+world"
+            expect(response.headers["Content-Type"]?).to eq("application/json")
+          end
+
+          it "returns an id" do
+            post "/api/v1/statuses", headers: form_bearer_headers(access_token.token), body: "status=Hello+world"
+            json = JSON.parse(response.body)
+            expect(json["id"].as_s).not_to be_empty
+          end
+
+          it "returns the content" do
+            post "/api/v1/statuses", headers: form_bearer_headers(access_token.token), body: "status=Hello+world"
+            json = JSON.parse(response.body)
+            expect(json["content"].as_s).to contain("Hello world")
+          end
+
+          it "sets visibility" do
+            post "/api/v1/statuses", headers: form_bearer_headers(access_token.token), body: "status=Hello&visibility=private"
+            json = JSON.parse(response.body)
+            expect(json["visibility"].as_s).to eq("private")
+          end
+        end
+
+        it "returns 422 when status is blank" do
+          post "/api/v1/statuses", headers: json_bearer_headers(access_token.token), body: {"status" => ""}.to_json
+          expect(response.status_code).to eq(422)
+        end
+      end
+    end
+
     describe "GET /api/v1/instance/translation_languages" do
       it "succeeds" do
         get "/api/v1/instance/translation_languages"
