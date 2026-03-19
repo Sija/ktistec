@@ -11,8 +11,12 @@
     JSON_HEADERS = HTTP::Headers{"Content-Type" => "application/json", "Accept" => "application/json"}
     FORM_HEADERS = HTTP::Headers{"Content-Type" => "application/x-www-form-urlencoded", "Accept" => "application/json"}
 
-    def bearer_headers(token)
-      HTTP::Headers{"Authorization" => "Bearer #{token}", "Accept" => "application/json"}
+    def json_bearer_headers(token)
+      JSON_HEADERS.clone.tap { |h| h["Authorization"] = "Bearer #{token}" }
+    end
+
+    def form_bearer_headers(token)
+      FORM_HEADERS.clone.tap { |h| h["Authorization"] = "Bearer #{token}" }
     end
 
     let(account) { register }
@@ -331,7 +335,7 @@
 
       context "with invalid token" do
         it "returns 401" do
-          get "/api/v1/accounts/verify_credentials", headers: bearer_headers("invalid_token")
+          get "/api/v1/accounts/verify_credentials", headers: json_bearer_headers("invalid_token")
           expect(response.status_code).to eq(401)
         end
       end
@@ -340,7 +344,7 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account, expires_at: 1.day.ago)
 
         it "returns 401" do
-          get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+          get "/api/v1/accounts/verify_credentials", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(401)
         end
       end
@@ -349,7 +353,7 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client) # account is nil
 
         it "returns 401" do
-          get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+          get "/api/v1/accounts/verify_credentials", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(401)
         end
       end
@@ -358,17 +362,17 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+          get "/api/v1/accounts/verify_credentials", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns JSON" do
-          get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+          get "/api/v1/accounts/verify_credentials", headers: json_bearer_headers(access_token.token)
           expect(response.headers["Content-Type"]?).to eq("application/json")
         end
 
         it "includes source.language" do
-          get "/api/v1/accounts/verify_credentials", headers: bearer_headers(access_token.token)
+          get "/api/v1/accounts/verify_credentials", headers: json_bearer_headers(access_token.token)
           json = JSON.parse(response.body)
           expect(json.dig?("source", "language")).to eq("en")
         end
@@ -387,22 +391,22 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+          get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns JSON" do
-          get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+          get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
           expect(response.headers["Content-Type"]?).to eq("application/json")
         end
 
         it "returns empty array" do
-          get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+          get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
           expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
         end
 
         it "does not include link header" do
-          get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+          get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
           expect(response.headers["Link"]?).to be_nil
         end
 
@@ -417,30 +421,30 @@
           end
 
           it "returns statuses" do
-            get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
             json = JSON.parse(response.body)
             expect(json.as_a.size).to eq(2)
           end
 
           it "includes id" do
-            get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
             json = JSON.parse(response.body)
             expect(json.as_a.map(&.dig?("id"))).to eq([post2.id.to_s, post1.id.to_s])
           end
 
           it "includes account.id" do
-            get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
             json = JSON.parse(response.body)
             expect(json.as_a.map(&.dig?("account", "id"))).to eq([other.id.to_s, other.id.to_s])
           end
 
           it "includes prev" do
-            get "/api/v1/timelines/home", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
             expect(response.headers["Link"]?).to contain(%Q(rel="prev"))
           end
 
           it "includes next" do
-            get "/api/v1/timelines/home?limit=1", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/home?limit=1", headers: json_bearer_headers(access_token.token)
             expect(response.headers["Link"]?).to contain(%Q(rel="next"))
           end
         end
@@ -457,22 +461,22 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+          get "/api/v1/timelines/public", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns JSON" do
-          get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+          get "/api/v1/timelines/public", headers: json_bearer_headers(access_token.token)
           expect(response.headers["Content-Type"]?).to eq("application/json")
         end
 
         it "returns empty array" do
-          get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+          get "/api/v1/timelines/public", headers: json_bearer_headers(access_token.token)
           expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
         end
 
         it "does not include link header" do
-          get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+          get "/api/v1/timelines/public", headers: json_bearer_headers(access_token.token)
           expect(response.headers["Link"]?).to be_nil
         end
 
@@ -482,45 +486,45 @@
           let_create!(:object, named: :post2, attributed_to: other, published: Time.utc, visible: true)
 
           it "returns statuses" do
-            get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/public", headers: json_bearer_headers(access_token.token)
             json = JSON.parse(response.body)
             expect(json.as_a.size).to eq(2)
           end
 
           it "includes id" do
-            get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/public", headers: json_bearer_headers(access_token.token)
             json = JSON.parse(response.body)
             expect(json.as_a.map(&.dig?("id"))).to eq([post2.id.to_s, post1.id.to_s])
           end
 
           it "includes account.id" do
-            get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/public", headers: json_bearer_headers(access_token.token)
             json = JSON.parse(response.body)
             expect(json.as_a.map(&.dig?("account", "id"))).to eq([other.id.to_s, other.id.to_s])
           end
 
           it "includes prev" do
-            get "/api/v1/timelines/public", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/public", headers: json_bearer_headers(access_token.token)
             expect(response.headers["Link"]?).to contain(%Q(rel="prev"))
           end
 
           it "includes next" do
-            get "/api/v1/timelines/public?limit=1", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/public?limit=1", headers: json_bearer_headers(access_token.token)
             expect(response.headers["Link"]?).to contain(%Q(rel="next"))
           end
 
           it "accepts local parameter" do
-            get "/api/v1/timelines/public?local=true", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/public?local=true", headers: json_bearer_headers(access_token.token)
             expect(response.status_code).to eq(200)
           end
 
           it "accepts remote parameter" do
-            get "/api/v1/timelines/public?remote=true", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/public?remote=true", headers: json_bearer_headers(access_token.token)
             expect(response.status_code).to eq(200)
           end
 
           it "accepts only_media parameter" do
-            get "/api/v1/timelines/public?only_media=true", headers: bearer_headers(access_token.token)
+            get "/api/v1/timelines/public?only_media=true", headers: json_bearer_headers(access_token.token)
             expect(response.status_code).to eq(200)
           end
         end
@@ -541,29 +545,29 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v1/statuses/#{status.id}", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/#{status.id}", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns JSON" do
-          get "/api/v1/statuses/#{status.id}", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/#{status.id}", headers: json_bearer_headers(access_token.token)
           expect(response.headers["Content-Type"]?).to eq("application/json")
         end
 
         it "includes id" do
-          get "/api/v1/statuses/#{status.id}", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/#{status.id}", headers: json_bearer_headers(access_token.token)
           json = JSON.parse(response.body)
           expect(json["id"]).to eq(status.id.to_s)
         end
 
         it "includes account.id" do
-          get "/api/v1/statuses/#{status.id}", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/#{status.id}", headers: json_bearer_headers(access_token.token)
           json = JSON.parse(response.body)
           expect(json["account"]["id"]).to eq(other.id.to_s)
         end
 
         it "returns 404 for non-existent status" do
-          get "/api/v1/statuses/999999", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/999999", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(404)
         end
       end
@@ -585,31 +589,31 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v1/statuses/#{reply1.id}/context", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/#{reply1.id}/context", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns JSON" do
-          get "/api/v1/statuses/#{reply1.id}/context", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/#{reply1.id}/context", headers: json_bearer_headers(access_token.token)
           expect(response.headers["Content-Type"]?).to eq("application/json")
         end
 
         it "returns ancestors" do
-          get "/api/v1/statuses/#{reply1.id}/context", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/#{reply1.id}/context", headers: json_bearer_headers(access_token.token)
           json = JSON.parse(response.body)
           ancestor_ids = json["ancestors"].as_a.map(&.["id"].as_s)
           expect(ancestor_ids).to eq([root.id.to_s])
         end
 
         it "returns descendants" do
-          get "/api/v1/statuses/#{reply1.id}/context", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/#{reply1.id}/context", headers: json_bearer_headers(access_token.token)
           json = JSON.parse(response.body)
           descendant_ids = json["descendants"].as_a.map(&.["id"].as_s)
           expect(descendant_ids).to eq([reply2.id.to_s])
         end
 
         it "returns 404 for non-existent status" do
-          get "/api/v1/statuses/999999/context", headers: bearer_headers(access_token.token)
+          get "/api/v1/statuses/999999/context", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(404)
         end
       end
@@ -637,12 +641,12 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v1/filters", headers: bearer_headers(access_token.token)
+          get "/api/v1/filters", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns empty array" do
-          get "/api/v1/filters", headers: bearer_headers(access_token.token)
+          get "/api/v1/filters", headers: json_bearer_headers(access_token.token)
           expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
         end
       end
@@ -658,12 +662,12 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v2/filters", headers: bearer_headers(access_token.token)
+          get "/api/v2/filters", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns empty array" do
-          get "/api/v2/filters", headers: bearer_headers(access_token.token)
+          get "/api/v2/filters", headers: json_bearer_headers(access_token.token)
           expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
         end
       end
@@ -679,12 +683,12 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v1/markers", headers: bearer_headers(access_token.token)
+          get "/api/v1/markers", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns empty object" do
-          get "/api/v1/markers", headers: bearer_headers(access_token.token)
+          get "/api/v1/markers", headers: json_bearer_headers(access_token.token)
           expect(JSON.parse(response.body)).to eq(JSON.parse("{}"))
         end
       end
@@ -700,24 +704,24 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v2/notifications/policy", headers: bearer_headers(access_token.token)
+          get "/api/v2/notifications/policy", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns for_not_followers" do
-          get "/api/v2/notifications/policy", headers: bearer_headers(access_token.token)
+          get "/api/v2/notifications/policy", headers: json_bearer_headers(access_token.token)
           json = JSON.parse(response.body)
           expect(json["for_not_followers"]).to eq("accept")
         end
 
         it "returns for_not_following" do
-          get "/api/v2/notifications/policy", headers: bearer_headers(access_token.token)
+          get "/api/v2/notifications/policy", headers: json_bearer_headers(access_token.token)
           json = JSON.parse(response.body)
           expect(json["for_not_following"]).to eq("accept")
         end
 
         it "returns summary with pending counts" do
-          get "/api/v2/notifications/policy", headers: bearer_headers(access_token.token)
+          get "/api/v2/notifications/policy", headers: json_bearer_headers(access_token.token)
           json = JSON.parse(response.body)
           expect(json.dig("summary", "pending_requests_count")).to eq(0)
           expect(json.dig("summary", "pending_notifications_count")).to eq(0)
@@ -735,12 +739,12 @@
         let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
 
         it "succeeds" do
-          get "/api/v1/notifications", headers: bearer_headers(access_token.token)
+          get "/api/v1/notifications", headers: json_bearer_headers(access_token.token)
           expect(response.status_code).to eq(200)
         end
 
         it "returns empty array" do
-          get "/api/v1/notifications", headers: bearer_headers(access_token.token)
+          get "/api/v1/notifications", headers: json_bearer_headers(access_token.token)
           expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
         end
       end

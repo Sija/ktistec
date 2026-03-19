@@ -16,8 +16,12 @@
     skip_auth ["/api/v1/apps"], POST
     skip_auth ["/api/v1/instance", "/api/v2/instance", "/api/v1/instance/translation_languages"], GET
 
-    options "/api/*" do |env|
+    before_all "/api/*" do |env|
       env.response.headers.add("Access-Control-Allow-Origin", "*")
+      env.response.content_type = "application/json"
+    end
+
+    options "/api/*" do |env|
       env.response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
       env.response.headers.add("Access-Control-Allow-Headers", "Authorization, Content-Type")
 
@@ -25,9 +29,6 @@
     end
 
     post "/api/v1/apps" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       client_name : String
       redirect_uris : Array(String)
       scopes : String
@@ -99,23 +100,14 @@
     end
 
     get "/api/v1/instance" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       API::V1::Serializers::Instance.current.to_json
     end
 
     get "/api/v2/instance" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       API::V2::Serializers::Instance.current.to_json
     end
 
     get "/api/v1/accounts/verify_credentials" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless (account = env.account?)
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -124,9 +116,6 @@
     end
 
     get "/api/v1/timelines/home" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless (account = env.account?)
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -147,9 +136,6 @@
     end
 
     get "/api/v1/timelines/public" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless (account = env.account?)
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -170,9 +156,6 @@
     end
 
     get "/api/v1/statuses/:id" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -187,9 +170,6 @@
     end
 
     get "/api/v1/statuses/:id/context" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -214,16 +194,10 @@
     # stub endpoints to prevent 404 errors during client initialization
 
     get "/api/v1/instance/translation_languages" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       "{}"
     end
 
     get "/api/v1/filters" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -232,9 +206,6 @@
     end
 
     get "/api/v2/filters" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -243,9 +214,6 @@
     end
 
     get "/api/v1/markers" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -254,9 +222,6 @@
     end
 
     get "/api/v2/notifications/policy" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"
       end
@@ -275,9 +240,6 @@
     end
 
     get "/api/v1/notifications" do |env|
-      env.response.headers.add("Access-Control-Allow-Origin", "*")
-      env.response.content_type = "application/json"
-
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"
       end
