@@ -275,7 +275,7 @@
 
           visibility = Ktistec::ViewHelper.visibility(object.attributed_to, object)
           media_attachments = build_media_attachments(object)
-          poll = object.is_a?(ActivityPub::Object::Question) ? build_poll(object) : nil
+          poll = object.is_a?(ActivityPub::Object::Question) ? build_poll(object, actor) : nil
           quote = include_quote ? build_quote(object, actor) : nil
 
           if (in_reply_to = object.in_reply_to?)
@@ -363,7 +363,7 @@
           end
         end
 
-        private def self.build_poll(question : ActivityPub::Object::Question) : Poll?
+        def self.build_poll(question : ActivityPub::Object::Question, actor : ActivityPub::Actor? = nil) : Poll?
           if (poll = question.poll?)
             options = poll.options.map do |option|
               Poll::PollOption.new(
@@ -372,6 +372,15 @@
               )
             end
             votes_count = poll.options.sum(&.votes_count)
+            if actor
+              voted = question.voted_by?(actor)
+              own_votes = question.options_by(actor).compact_map do |name|
+                poll.options.index { |o| o.name == name }
+              end
+            else
+              voted = false
+              own_votes = [] of Int32
+            end
             Poll.new(
               id: poll.id.to_s,
               expires_at: poll.closed_at.try(&.to_rfc3339),
@@ -381,8 +390,8 @@
               voters_count: poll.multiple_choice ? poll.voters_count : nil,
               options: options,
               emojis: [] of CustomEmoji,
-              voted: false,
-              own_votes: [] of Int32,
+              voted: voted,
+              own_votes: own_votes,
             )
           end
         end

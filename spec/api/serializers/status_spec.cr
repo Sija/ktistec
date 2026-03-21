@@ -399,6 +399,21 @@
             expect(api_poll.expired).to be_false
           end
         end
+
+        context "when actor has voted" do
+          let_create(:actor, named: :voter, local: true)
+          let_create!(:note, attributed_to: voter, in_reply_to_iri: question.iri, name: "Yes", special: "vote")
+
+          subject { described_class.from_object(question, actor: voter) }
+
+          it "returns voted" do
+            expect(api_poll.voted).to be_true
+          end
+
+          it "returns own_votes" do
+            expect(api_poll.own_votes).to eq([0])
+          end
+        end
       end
 
       context "with quote" do
