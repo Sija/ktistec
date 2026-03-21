@@ -758,6 +758,40 @@
       end
     end
 
+    describe "GET /api/v1/preferences" do
+      it "returns 401" do
+        get "/api/v1/preferences"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "succeeds" do
+          get "/api/v1/preferences", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns posting:default:visibility" do
+          get "/api/v1/preferences", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json["posting:default:visibility"]).to eq("public")
+        end
+
+        it "returns posting:default:sensitive" do
+          get "/api/v1/preferences", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json["posting:default:sensitive"]).to eq(false)
+        end
+
+        it "returns posting:default:language from account" do
+          get "/api/v1/preferences", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json["posting:default:language"]).to eq("en")
+        end
+      end
+    end
+
     describe "GET /api/v1/instance/translation_languages" do
       it "succeeds" do
         get "/api/v1/instance/translation_languages"

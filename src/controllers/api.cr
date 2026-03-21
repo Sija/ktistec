@@ -273,6 +273,20 @@
       API::V1::Serializers::Status.from_object(object).to_json
     end
 
+    get "/api/v1/preferences" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+
+      {
+        "posting:default:visibility" => "public",
+        "posting:default:sensitive"  => false,
+        "posting:default:language"   => account.language,
+        "reading:expand:media"       => "default",
+        "reading:expand:spoilers"    => false,
+      }.to_json
+    end
+
     # stub endpoints to prevent 404 errors during client initialization
 
     get "/api/v1/instance/translation_languages" do |env|
