@@ -328,5 +328,21 @@
 
       "[]"
     end
+
+    get "/api/v1/lists" do |env|
+      unless env.account?
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+
+      "[]"
+    end
+
+    get "/api/v1/followed_tags" do |env|
+      unless env.account?
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+
+      "[]"
+    end
   end
 {% end %}

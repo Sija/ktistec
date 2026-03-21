@@ -888,5 +888,48 @@
         end
       end
     end
+
+    describe "GET /api/v1/lists" do
+      it "returns 401" do
+        get "/api/v1/lists"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "succeeds" do
+          get "/api/v1/lists", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns empty array" do
+          get "/api/v1/lists", headers: json_bearer_headers(access_token.token)
+          expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
+        end
+      end
+    end
+
+    describe "GET /api/v1/followed_tags" do
+      it "returns 401" do
+        get "/api/v1/followed_tags"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "succeeds" do
+          get "/api/v1/followed_tags", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns empty array" do
+          get "/api/v1/followed_tags", headers: json_bearer_headers(access_token.token)
+          expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
+        end
+      end
+    end
+
   end
 {% end %}
