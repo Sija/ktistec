@@ -978,6 +978,42 @@
       end
     end
 
+    describe "GET /api/v1/accounts/relationships" do
+      it "returns 401" do
+        get "/api/v1/accounts/relationships"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+        let_create(:actor, named: :other1, local: true)
+        let_create(:actor, named: :other2, local: true)
+
+        it "succeeds" do
+          get "/api/v1/accounts/relationships?id%5B%5D=#{other1.id}", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "handles multiple ids" do
+          get "/api/v1/accounts/relationships?id%5B%5D=#{other1.id}&id%5B%5D=#{other2.id}", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.size).to eq(2)
+        end
+
+        it "returns the ids" do
+          get "/api/v1/accounts/relationships?id%5B%5D=#{other1.id}&id%5B%5D=#{other2.id}", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.map(&.dig?("id"))).to eq([other1.id.to_s, other2.id.to_s])
+        end
+
+        it "returns empty array" do
+          get "/api/v1/accounts/relationships?id%5B%5D=999999", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a).to be_empty
+        end
+      end
+    end
+
     describe "GET /api/v1/instance/translation_languages" do
       it "succeeds" do
         get "/api/v1/instance/translation_languages"
@@ -1150,6 +1186,5 @@
         end
       end
     end
-
   end
 {% end %}

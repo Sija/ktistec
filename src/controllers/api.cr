@@ -9,6 +9,7 @@
   require "../api/serializers/instance"
   require "../api/serializers/account"
   require "../api/serializers/status"
+  require "../api/serializers/relationship"
 
   class APIController
     include Ktistec::Controller
@@ -439,6 +440,24 @@
         "reading:expand:media"       => "default",
         "reading:expand:spoilers"    => false,
       }.to_json
+    end
+
+    get "/api/v1/accounts/relationships" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+
+      actor = account.actor
+      ids = env.params.query.fetch_all("id[]")
+
+      relationships = ids.compact_map do |id|
+        if (other = ActivityPub::Actor.find?(id.to_i64))
+          API::V1::Serializers::Relationship.from_actors(actor, other)
+        end
+      rescue ArgumentError
+      end
+
+      relationships.to_json
     end
 
     # stub endpoints to prevent 404 errors during client initialization
