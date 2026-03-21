@@ -123,12 +123,13 @@
         unauthorized "api/error", error: "The access token is invalid"
       end
 
+      actor = account.actor
       params = cursor_pagination_params(env)
       params = params.merge(limit: params[:limit].clamp(1, 40))
 
-      timeline = account.actor.timeline(**params)
+      timeline = actor.timeline(**params)
       statuses = timeline.map do |entry|
-        API::V1::Serializers::Status.from_object(entry.object)
+        API::V1::Serializers::Status.from_object(entry.object, actor: actor)
       end
 
       if (link = link_header("/api/v1/timelines/home", statuses, params[:limit]))
@@ -143,12 +144,13 @@
         unauthorized "api/error", error: "The access token is invalid"
       end
 
+      actor = account.actor
       params = cursor_pagination_params(env)
       params = params.merge(limit: params[:limit].clamp(1, 40))
 
       posts = ActivityPub::Object.federated_posts(**params)
       statuses = posts.map do |object|
-        API::V1::Serializers::Status.from_object(object)
+        API::V1::Serializers::Status.from_object(object, actor: actor)
       end
 
       if (link = link_header("/api/v1/timelines/public", statuses, params[:limit]))
@@ -159,7 +161,7 @@
     end
 
     get "/api/v1/statuses/:id" do |env|
-      unless env.account?
+      unless (account = env.account?)
         unauthorized "api/error", error: "The access token is invalid"
       end
 
@@ -169,14 +171,15 @@
         not_found "api/error", error: "Record not found"
       end
 
-      API::V1::Serializers::Status.from_object(object).to_json
+      API::V1::Serializers::Status.from_object(object, actor: account.actor).to_json
     end
 
     get "/api/v1/statuses/:id/context" do |env|
-      unless env.account?
+      unless (account = env.account?)
         unauthorized "api/error", error: "The access token is invalid"
       end
 
+      actor = account.actor
       id = env.params.url["id"].to_i64
 
       unless (object = ActivityPub::Object.find?(id))
@@ -184,11 +187,11 @@
       end
 
       ancestors = object.ancestors.reject(&.id.== object.id).map do |ancestor|
-        API::V1::Serializers::Status.from_object(ancestor)
+        API::V1::Serializers::Status.from_object(ancestor, actor: actor)
       end
 
       descendants = object.descendants.reject(&.id.== object.id).map do |descendant|
-        API::V1::Serializers::Status.from_object(descendant)
+        API::V1::Serializers::Status.from_object(descendant, actor: actor)
       end
 
       {ancestors: ancestors, descendants: descendants}.to_json
@@ -270,7 +273,7 @@
 
       OutboxActivityProcessor.process(account, activity)
 
-      API::V1::Serializers::Status.from_object(object).to_json
+      API::V1::Serializers::Status.from_object(object, actor: account.actor).to_json
     end
 
     get "/api/v1/preferences" do |env|
