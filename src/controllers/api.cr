@@ -1,7 +1,9 @@
 {% if flag?(:with_mastodon_api) %}
   require "../framework/controller"
   require "../models/activity_pub/object"
+  require "../models/activity_pub/object/question"
   require "../models/activity_pub/activity/create"
+  require "../models/poll"
   require "../services/oauth2/client_registration"
   require "../services/object_factory"
   require "../services/outbox_activity_processor"
@@ -458,6 +460,84 @@
       end
 
       relationships.to_json
+    end
+
+    post "/api/v1/polls/:id/votes" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (poll = Poll.find?(id_param(env)))
+        not_found "api/error", error: "Poll not found"
+      end
+
+      question = poll.question
+      actor = account.actor
+
+      if poll.expired?
+        unprocessable_entity "api/error", error: "The poll has already ended"
+      end
+      if question.attributed_to == actor
+        unprocessable_entity "api/error", error: "You cannot vote on your own poll"
+      end
+      if question.voted_by?(actor)
+        unprocessable_entity "api/error", error: "You have already voted on this poll"
+      end
+
+      choices = env.params.json["choices"]?
+      indices = choices.is_a?(Array) ? choices.map(&.as_i) : [] of Int32
+
+      if indices.empty?
+        unprocessable_entity "api/error", error: "No choices provided"
+      end
+      unless poll.multiple_choice
+        if indices.size > 1
+          unprocessable_entity "api/error", error: "Poll only allows one choice"
+        end
+      end
+
+      selected = indices.compact_map do |index|
+        poll.options[index]?.try(&.name)
+      end
+
+      if selected.size != indices.size
+        unprocessable_entity "api/error", error: "Invalid choice index"
+      end
+
+      now = Time.utc
+
+      selected.each do |name|
+        vote = ActivityPub::Object::Note.new(
+          iri: "#{host}/objects/#{id}",
+          attributed_to: actor,
+          in_reply_to: question,
+          name: name,
+          content: nil,
+          published: now,
+          special: "vote",
+          to: [question.attributed_to.iri],
+          cc: [] of String,
+        )
+        activity = ActivityPub::Activity::Create.new(
+          iri: "#{host}/activities/#{id}",
+          actor: actor,
+          object: vote,
+          published: vote.published,
+          to: vote.to,
+          cc: vote.cc,
+        ).save
+
+        if (closed_at = poll.closed_at)
+          if closed_at > now
+            unless Task::NotifyPollExpiry.find?(question: question)
+              Task::NotifyPollExpiry.new(source_iri: "", question: question).schedule(closed_at)
+            end
+          end
+        end
+
+        OutboxActivityProcessor.process(account, activity)
+      end
+
+      API::V1::Serializers::Status.build_poll(question, actor).not_nil!.to_json
     end
 
     # stub endpoints to prevent 404 errors during client initialization
