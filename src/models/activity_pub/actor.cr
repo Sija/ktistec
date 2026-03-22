@@ -258,6 +258,20 @@ module ActivityPub
       QUERY
     end
 
+    private def social_cursor_query(type, orig, dest, public = true)
+      public = public ? "AND r.confirmed = 1 AND r.visible = 1" : nil
+      <<-QUERY
+        SELECT #{Actor.columns(prefix: "a")}
+          FROM actors AS a, relationships AS r
+         WHERE a.iri = r.#{orig}
+           #{common_filters(actors: "a")}
+           AND r.type = '#{type}'
+           AND r.#{dest} = ?
+           #{public}
+           AND %{cursor_condition}
+      QUERY
+    end
+
     def all_following(page = 1, size = 10, public = true)
       Actor.query_and_paginate(
         social_query(Relationship::Social::Follow, :to_iri, :from_iri, public),
@@ -265,10 +279,24 @@ module ActivityPub
       )
     end
 
+    def all_following(*, max_id = nil, min_id = nil, limit = 10, public = true)
+      Actor.query_with_cursor(
+        social_cursor_query(Relationship::Social::Follow, :to_iri, :from_iri, public),
+        self.iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit
+      )
+    end
+
     def all_followers(page = 1, size = 10, public = false)
       Actor.query_and_paginate(
         social_query(Relationship::Social::Follow, :from_iri, :to_iri, public),
         self.iri, page: page, size: size
+      )
+    end
+
+    def all_followers(*, max_id = nil, min_id = nil, limit = 10, public = false)
+      Actor.query_with_cursor(
+        social_cursor_query(Relationship::Social::Follow, :from_iri, :to_iri, public),
+        self.iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit
       )
     end
 
