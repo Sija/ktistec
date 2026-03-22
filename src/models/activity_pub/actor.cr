@@ -300,6 +300,22 @@ module ActivityPub
       )
     end
 
+    def all_follow_requests(*, max_id = nil, min_id = nil, limit = 10)
+      query = <<-QUERY
+        SELECT #{Actor.columns(prefix: "a")}
+          FROM actors AS a, relationships AS r
+         WHERE a.iri = r.from_iri
+           #{common_filters(actors: "a")}
+           AND r.type = '#{Relationship::Social::Follow}'
+           AND r.to_iri = ?
+           AND r.confirmed = 0
+           AND %{cursor_condition}
+      QUERY
+      Actor.query_with_cursor(
+        query, self.iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit
+      )
+    end
+
     private def activity_query(type)
       <<-QUERY
          SELECT #{Object.columns(prefix: "o")}
