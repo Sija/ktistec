@@ -1186,6 +1186,128 @@
       end
     end
 
+    describe "GET /api/v1/accounts/:id/following" do
+      it "returns 401" do
+        get "/api/v1/accounts/0/following"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let(actor) { account.actor }
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "returns empty array" do
+          get "/api/v1/accounts/#{actor.id}/following", headers: json_bearer_headers(access_token.token)
+          expect(JSON.parse(response.body).as_a).to be_empty
+        end
+
+        it "returns 404" do
+          get "/api/v1/accounts/999999/following", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        context "with following" do
+          let_create(:actor, named: :followed1)
+          let_create(:actor, named: :followed2)
+          let_create(:actor, named: :followed3)
+
+          before_each do
+            actor.follow(followed1, confirmed: true, visible: true).save
+            actor.follow(followed2, confirmed: true, visible: true).save
+            actor.follow(followed3, confirmed: true, visible: true).save
+          end
+
+          it "succeeds" do
+            get "/api/v1/accounts/#{actor.id}/following", headers: json_bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+
+          it "returns JSON" do
+            get "/api/v1/accounts/#{actor.id}/following", headers: json_bearer_headers(access_token.token)
+            expect(response.headers["Content-Type"]?).to eq("application/json")
+          end
+
+          it "returns all following" do
+            get "/api/v1/accounts/#{actor.id}/following", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.size).to eq(3)
+          end
+
+          it "returns account ids" do
+            get "/api/v1/accounts/#{actor.id}/following", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig("id").as_s)).to contain(followed1.id.to_s, followed2.id.to_s, followed3.id.to_s)
+          end
+
+          it "includes link header" do
+            get "/api/v1/accounts/#{actor.id}/following?limit=1", headers: json_bearer_headers(access_token.token)
+            expect(response.headers["Link"]?).to contain(%Q(rel="next"))
+          end
+        end
+      end
+    end
+
+    describe "GET /api/v1/accounts/:id/followers" do
+      it "returns 401" do
+        get "/api/v1/accounts/0/followers"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let(actor) { account.actor }
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "returns empty array" do
+          get "/api/v1/accounts/#{actor.id}/followers", headers: json_bearer_headers(access_token.token)
+          expect(JSON.parse(response.body).as_a).to be_empty
+        end
+
+        it "returns 404" do
+          get "/api/v1/accounts/999999/followers", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        context "with followers" do
+          let_create(:actor, named: :follower1)
+          let_create(:actor, named: :follower2)
+          let_create(:actor, named: :follower3)
+
+          before_each do
+            follower1.follow(actor, confirmed: true, visible: true).save
+            follower2.follow(actor, confirmed: true, visible: true).save
+            follower3.follow(actor, confirmed: true, visible: true).save
+          end
+
+          it "succeeds" do
+            get "/api/v1/accounts/#{actor.id}/followers", headers: json_bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+
+          it "returns JSON" do
+            get "/api/v1/accounts/#{actor.id}/followers", headers: json_bearer_headers(access_token.token)
+            expect(response.headers["Content-Type"]?).to eq("application/json")
+          end
+
+          it "returns all followers" do
+            get "/api/v1/accounts/#{actor.id}/followers", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.size).to eq(3)
+          end
+
+          it "returns account ids" do
+            get "/api/v1/accounts/#{actor.id}/followers", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig("id").as_s)).to contain(follower1.id.to_s, follower2.id.to_s, follower3.id.to_s)
+          end
+
+          it "includes link header" do
+            get "/api/v1/accounts/#{actor.id}/followers?limit=1", headers: json_bearer_headers(access_token.token)
+            expect(response.headers["Link"]?).to contain(%Q(rel="next"))
+          end
+        end
+      end
+    end
+
     describe "GET /api/v1/instance/translation_languages" do
       it "succeeds" do
         get "/api/v1/instance/translation_languages"

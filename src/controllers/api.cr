@@ -549,6 +549,54 @@
       API::V1::Serializers::Status.build_poll(question, actor).not_nil!.to_json
     end
 
+    get "/api/v1/accounts/:id/following" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (actor = ActivityPub::Actor.find?(id_param(env)))
+        not_found "api/error", error: "Actor not found"
+      end
+
+      params = cursor_pagination_params(env)
+      params = params.merge(limit: params[:limit].clamp(1, 80))
+
+      public = (account.actor != actor)
+      following = actor.all_following(**params, public: public)
+      accounts = following.map do |actor|
+        API::V1::Serializers::Account.from_actor(actor)
+      end
+
+      if (link = link_header("/api/v1/accounts/#{actor.id}/following", accounts, params[:limit]))
+        env.response.headers["Link"] = link
+      end
+
+      accounts.to_a.to_json
+    end
+
+    get "/api/v1/accounts/:id/followers" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (actor = ActivityPub::Actor.find?(id_param(env)))
+        not_found "api/error", error: "Actor not found"
+      end
+
+      params = cursor_pagination_params(env)
+      params = params.merge(limit: params[:limit].clamp(1, 80))
+
+      public = (account.actor != actor)
+      followers = actor.all_followers(**params, public: public)
+      accounts = followers.map do |actor|
+        API::V1::Serializers::Account.from_actor(actor)
+      end
+
+      if (link = link_header("/api/v1/accounts/#{actor.id}/followers", accounts, params[:limit]))
+        env.response.headers["Link"] = link
+      end
+
+      accounts.to_a.to_json
+    end
+
     # stub endpoints to prevent 404 errors during client initialization
 
     get "/api/v1/instance/translation_languages" do |env|
