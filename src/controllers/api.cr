@@ -483,8 +483,17 @@
         unprocessable_entity "api/error", error: "You have already voted on this poll"
       end
 
-      choices = env.params.json["choices"]?
-      indices = choices.is_a?(Array) ? choices.map(&.as_i) : [] of Int32
+      params = normalize_params(env.params.body.presence || env.params.json)
+      choices = params["choices[]"]? || params["choices"]?
+      indices =
+        case choices
+        when Array
+          choices.map(&.to_i)
+        when String
+          [choices.to_i]
+        else
+          [] of Int32
+        end
 
       if indices.empty?
         unprocessable_entity "api/error", error: "No choices provided"

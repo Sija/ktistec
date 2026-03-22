@@ -1170,6 +1170,19 @@
           post "/api/v1/polls/#{poll.id}/votes", headers: json_bearer_headers(access_token.token), body: {"choices" => [99]}.to_json
           expect(response.status_code).to eq(422)
         end
+
+        context "with form-encoded body" do
+          it "succeeds" do
+            post "/api/v1/polls/#{poll.id}/votes", headers: form_bearer_headers(access_token.token), body: "choices[]=0"
+            expect(response.status_code).to eq(200)
+          end
+
+          it "returns a poll" do
+            post "/api/v1/polls/#{poll.id}/votes", headers: form_bearer_headers(access_token.token), body: "choices[]=0"
+            json = JSON.parse(response.body)
+            expect(json["id"]).to eq(poll.id.to_s)
+          end
+        end
       end
     end
 
