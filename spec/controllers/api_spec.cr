@@ -1308,6 +1308,62 @@
       end
     end
 
+    describe "GET /api/v1/follow_requests" do
+      it "returns 401" do
+        get "/api/v1/follow_requests"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let(actor) { account.actor }
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "returns empty array" do
+          get "/api/v1/follow_requests", headers: json_bearer_headers(access_token.token)
+          expect(JSON.parse(response.body).as_a).to be_empty
+        end
+
+        context "with pending follow requests" do
+          let_create(:actor, named: :requester1)
+          let_create(:actor, named: :requester2)
+          let_create(:actor, named: :requester3)
+
+          before_each do
+            requester1.follow(actor, confirmed: false, visible: false).save
+            requester2.follow(actor, confirmed: false, visible: false).save
+            requester3.follow(actor, confirmed: false, visible: false).save
+          end
+
+          it "succeeds" do
+            get "/api/v1/follow_requests", headers: json_bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+
+          it "returns JSON" do
+            get "/api/v1/follow_requests", headers: json_bearer_headers(access_token.token)
+            expect(response.headers["Content-Type"]?).to eq("application/json")
+          end
+
+          it "returns all pending requesters" do
+            get "/api/v1/follow_requests", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.size).to eq(3)
+          end
+
+          it "returns account ids" do
+            get "/api/v1/follow_requests", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig("id").as_s)).to contain(requester1.id.to_s, requester2.id.to_s, requester3.id.to_s)
+          end
+
+          it "includes link header" do
+            get "/api/v1/follow_requests?limit=1", headers: json_bearer_headers(access_token.token)
+            expect(response.headers["Link"]?).to contain(%Q(rel="next"))
+          end
+        end
+      end
+    end
+
     describe "GET /api/v1/instance/translation_languages" do
       it "succeeds" do
         get "/api/v1/instance/translation_languages"
