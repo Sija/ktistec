@@ -1364,6 +1364,189 @@
       end
     end
 
+    describe "POST /api/v1/accounts/:id/follow" do
+      it "returns 401" do
+        post "/api/v1/accounts/0/follow"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+        let_create(:actor, named: :other)
+        let(actor) { account.actor }
+
+        it "returns 404" do
+          post "/api/v1/accounts/999999/follow", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        it "succeeds" do
+          post "/api/v1/accounts/#{other.id}/follow", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns a relationship" do
+          post "/api/v1/accounts/#{other.id}/follow", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json["id"]).to eq(other.id.to_s)
+        end
+
+        it "sets requested to true" do
+          post "/api/v1/accounts/#{other.id}/follow", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json["requested"]).to eq(true)
+        end
+
+        it "creates a follow relationship" do
+          expect { post "/api/v1/accounts/#{other.id}/follow", headers: json_bearer_headers(access_token.token) }
+            .to change { Relationship::Social::Follow.count(actor: actor, object: other) }.by(1)
+        end
+
+        context "when already following" do
+          before_each do
+            actor.follow(other, confirmed: true, visible: true).save
+          end
+
+          it "does not create a duplicate" do
+            expect { post "/api/v1/accounts/#{other.id}/follow", headers: json_bearer_headers(access_token.token) }
+              .not_to change { Relationship::Social::Follow.count(actor: actor) }
+          end
+        end
+      end
+    end
+
+    describe "POST /api/v1/accounts/:id/unfollow" do
+      it "returns 401" do
+        post "/api/v1/accounts/0/unfollow"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+        let_create(:actor, named: :other)
+        let(actor) { account.actor }
+
+        it "returns 404" do
+          post "/api/v1/accounts/999999/unfollow", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        it "succeeds" do
+          post "/api/v1/accounts/#{other.id}/unfollow", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns a relationship" do
+          post "/api/v1/accounts/#{other.id}/unfollow", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json["id"]).to eq(other.id.to_s)
+        end
+
+        context "when following" do
+          let_create!(:follow, named: nil, actor: actor, object: other)
+
+          before_each do
+            actor.follow(other, confirmed: true, visible: false).save
+          end
+
+          it "sets following to false" do
+            post "/api/v1/accounts/#{other.id}/unfollow", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json["following"]).to eq(false)
+          end
+
+          it "destroys the follow relationship" do
+            expect { post "/api/v1/accounts/#{other.id}/unfollow", headers: json_bearer_headers(access_token.token) }
+              .to change { Relationship::Social::Follow.count(actor: actor, object: other) }.by(-1)
+          end
+        end
+      end
+    end
+
+    describe "POST /api/v1/follow_requests/:id/authorize" do
+      it "returns 401" do
+        post "/api/v1/follow_requests/0/authorize"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+        let_create(:actor, named: :requester)
+        let(actor) { account.actor }
+
+        it "returns 404" do
+          post "/api/v1/follow_requests/999999/authorize", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        it "succeeds" do
+          post "/api/v1/follow_requests/#{requester.id}/authorize", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        context "with a pending follow request" do
+          let_create!(:follow, named: nil, actor: requester, object: actor)
+
+          before_each do
+            requester.follow(actor, confirmed: false, visible: false).save
+          end
+
+          it "sets followed_by to true" do
+            post "/api/v1/follow_requests/#{requester.id}/authorize", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json["followed_by"]).to eq(true)
+          end
+
+          it "confirms the follow relationship" do
+            expect { post "/api/v1/follow_requests/#{requester.id}/authorize", headers: json_bearer_headers(access_token.token) }
+              .to change { Relationship::Social::Follow.find(actor: requester, object: actor).confirmed }.from(false).to(true)
+          end
+        end
+      end
+    end
+
+    describe "POST /api/v1/follow_requests/:id/reject" do
+      it "returns 401" do
+        post "/api/v1/follow_requests/0/reject"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+        let_create(:actor, named: :requester)
+        let(actor) { account.actor }
+
+        it "returns 404" do
+          post "/api/v1/follow_requests/999999/reject", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        it "succeeds" do
+          post "/api/v1/follow_requests/#{requester.id}/reject", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        context "with a pending follow request" do
+          let_create!(:follow, named: nil, actor: requester, object: actor)
+
+          before_each do
+            requester.follow(actor, confirmed: false, visible: false).save
+          end
+
+          it "sets followed_by to false" do
+            post "/api/v1/follow_requests/#{requester.id}/reject", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json["followed_by"]).to eq(false)
+          end
+
+          it "confirms the follow relationship" do
+            expect { post "/api/v1/follow_requests/#{requester.id}/reject", headers: json_bearer_headers(access_token.token) }
+              .to change { Relationship::Social::Follow.find(actor: requester, object: actor).confirmed }.from(false).to(true)
+          end
+        end
+      end
+    end
+
     describe "GET /api/v1/instance/translation_languages" do
       it "succeeds" do
         get "/api/v1/instance/translation_languages"

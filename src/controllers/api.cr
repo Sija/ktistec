@@ -597,6 +597,58 @@
       accounts.to_a.to_json
     end
 
+    post "/api/v1/accounts/:id/follow" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (other = ActivityPub::Actor.find?(id_param(env)))
+        not_found "api/error", error: "Actor not found"
+      end
+
+      actor = account.actor
+
+      unless actor.follows?(other)
+        activity = ActivityPub::Activity::Follow.new(
+          iri: "#{host}/activities/#{id}",
+          actor: actor,
+          object: other,
+          to: [other.iri],
+        )
+
+        activity.save
+        OutboxActivityProcessor.process(account, activity)
+      end
+
+      API::V1::Serializers::Relationship.from_actors(actor, other).to_json
+    end
+
+    post "/api/v1/accounts/:id/unfollow" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (other = ActivityPub::Actor.find?(id_param(env)))
+        not_found "api/error", error: "Actor not found"
+      end
+
+      actor = account.actor
+
+      if (follow = actor.follows?(other))
+        if (follow_activity = follow.activity?)
+          undo = ActivityPub::Activity::Undo.new(
+            iri: "#{host}/activities/#{id}",
+            actor: actor,
+            object: follow_activity,
+            to: [other.iri],
+          )
+
+          undo.save
+          OutboxActivityProcessor.process(account, undo)
+        end
+      end
+
+      API::V1::Serializers::Relationship.from_actors(actor, other).to_json
+    end
+
     get "/api/v1/follow_requests" do |env|
       unless (account = env.account?)
         unauthorized "api/error", error: "The access token is invalid"
@@ -617,6 +669,60 @@
       end
 
       accounts.to_a.to_json
+    end
+
+    post "/api/v1/follow_requests/:id/authorize" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (other = ActivityPub::Actor.find?(id_param(env)))
+        not_found "api/error", error: "Actor not found"
+      end
+
+      actor = account.actor
+
+      if (follow = Relationship::Social::Follow.find?(actor: other, object: actor, confirmed: false))
+        if (follow_activity = follow.activity?)
+          accept = ActivityPub::Activity::Accept.new(
+            iri: "#{host}/activities/#{id}",
+            actor: actor,
+            object: follow_activity,
+            to: [other.iri],
+          )
+
+          accept.save
+          OutboxActivityProcessor.process(account, accept)
+        end
+      end
+
+      API::V1::Serializers::Relationship.from_actors(actor, other).to_json
+    end
+
+    post "/api/v1/follow_requests/:id/reject" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (other = ActivityPub::Actor.find?(id_param(env)))
+        not_found "api/error", error: "Actor not found"
+      end
+
+      actor = account.actor
+
+      if (follow = Relationship::Social::Follow.find?(actor: other, object: actor, confirmed: false))
+        if (follow_activity = follow.activity?)
+          reject = ActivityPub::Activity::Reject.new(
+            iri: "#{host}/activities/#{id}",
+            actor: actor,
+            object: follow_activity,
+            to: [other.iri],
+          )
+
+          reject.save
+          OutboxActivityProcessor.process(account, reject)
+        end
+      end
+
+      API::V1::Serializers::Relationship.from_actors(actor, other).to_json
     end
 
     # stub endpoints to prevent 404 errors during client initialization
