@@ -379,6 +379,95 @@
       end
     end
 
+    describe "GET /api/v1/accounts/:id/statuses" do
+      macro published_post(index, actor, visible = true)
+        let_create(:object, named: post\{{index}}, attributed_to: \{{actor}}, visible: \{{visible}}, local: true, published: Time.utc)
+        let_create(:create, named: create\{{index}}, actor: \{{actor}}, object: post\{{index}}, local: true)
+      end
+
+      it "returns 401" do
+        get "/api/v1/accounts/0/statuses"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "with valid user access token" do
+        let(actor) { account.actor }
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "succeeds" do
+          get "/api/v1/accounts/#{actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns JSON" do
+          get "/api/v1/accounts/#{actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+          expect(response.headers["Content-Type"]?).to eq("application/json")
+        end
+
+        it "returns empty array" do
+          get "/api/v1/accounts/#{actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+          expect(JSON.parse(response.body).as_a).to be_empty
+        end
+
+        it "returns 404" do
+          get "/api/v1/accounts/999999/statuses", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        context "with your posts" do
+          published_post(1, actor)
+          published_post(2, actor)
+          published_post(3, actor, visible: false)
+
+          before_each do
+            put_in_outbox(actor, create1)
+            put_in_outbox(actor, create2)
+            put_in_outbox(actor, create3)
+          end
+
+          it "returns all statuses" do
+            get "/api/v1/accounts/#{actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.size).to eq(3)
+          end
+
+          it "returns status ids" do
+            get "/api/v1/accounts/#{actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig("id").as_s)).to contain_exactly(post1.id.to_s, post2.id.to_s, post3.id.to_s).in_any_order
+          end
+
+          it "includes link header" do
+            get "/api/v1/accounts/#{actor.id}/statuses?limit=1", headers: json_bearer_headers(access_token.token)
+            expect(response.headers["Link"]?).to contain(%Q(rel="next"))
+          end
+        end
+
+        context "viewing another actor's posts" do
+          let_create(:actor, named: :other_actor, local: true)
+          published_post(4, other_actor)
+          published_post(5, other_actor, visible: false)
+
+          before_each do
+            put_in_outbox(other_actor, create4)
+            put_in_outbox(other_actor, create5)
+          end
+
+          it "returns public statuses" do
+            get "/api/v1/accounts/#{other_actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig("id").as_s)).to contain(post4.id.to_s)
+          end
+
+          it "excludes private statuses" do
+            get "/api/v1/accounts/#{other_actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig("id").as_s)).not_to contain(post5.id.to_s)
+          end
+        end
+      end
+    end
+
     describe "GET /api/v1/timelines/home" do
       let(actor) { account.actor }
 

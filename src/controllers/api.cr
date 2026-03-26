@@ -121,6 +121,34 @@
       API::V1::Serializers::Account.from_account(account, account.actor, include_source: true).to_json
     end
 
+    get "/api/v1/accounts/:id/statuses" do |env|
+      unless (account = env.account?)
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (actor = ActivityPub::Actor.find?(id_param(env)))
+        not_found "api/error", error: "Actor not found"
+      end
+
+      params = cursor_pagination_params(env)
+      params = params.merge(limit: params[:limit].clamp(1, 40))
+
+      posts =
+        if account.actor == actor
+          actor.all_posts(**params)
+        else
+          actor.public_posts(**params)
+        end
+      statuses = posts.map do |object|
+        API::V1::Serializers::Status.from_object(object, actor: account.actor)
+      end
+
+      if (link = link_header("/api/v1/accounts/#{actor.id}/statuses", statuses, params[:limit]))
+        env.response.headers["Link"] = link
+      end
+
+      statuses.to_a.to_json
+    end
+
     get "/api/v1/timelines/home" do |env|
       unless (account = env.account?)
         unauthorized "api/error", error: "The access token is invalid"
