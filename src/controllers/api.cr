@@ -135,8 +135,10 @@
       posts =
         if account.actor == actor
           actor.all_posts(**params)
-        else
+        elsif actor.local?
           actor.public_posts(**params)
+        else
+          actor.known_posts(**params)
         end
       statuses = posts.map do |object|
         API::V1::Serializers::Status.from_object(object, actor: account.actor)

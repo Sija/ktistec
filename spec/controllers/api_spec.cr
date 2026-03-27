@@ -443,26 +443,44 @@
           end
         end
 
-        context "viewing another actor's posts" do
-          let_create(:actor, named: :other_actor, local: true)
-          published_post(4, other_actor)
-          published_post(5, other_actor, visible: false)
+        context "viewing a local actor's posts" do
+          let_create(:actor, named: :local_actor, local: true)
+          published_post(4, local_actor)
+          published_post(5, local_actor, visible: false)
 
           before_each do
-            put_in_outbox(other_actor, create4)
-            put_in_outbox(other_actor, create5)
+            put_in_outbox(local_actor, create4)
+            put_in_outbox(local_actor, create5)
           end
 
           it "returns public statuses" do
-            get "/api/v1/accounts/#{other_actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+            get "/api/v1/accounts/#{local_actor.id}/statuses", headers: json_bearer_headers(access_token.token)
             json = JSON.parse(response.body)
             expect(json.as_a.map(&.dig("id").as_s)).to contain(post4.id.to_s)
           end
 
           it "excludes private statuses" do
-            get "/api/v1/accounts/#{other_actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+            get "/api/v1/accounts/#{local_actor.id}/statuses", headers: json_bearer_headers(access_token.token)
             json = JSON.parse(response.body)
             expect(json.as_a.map(&.dig("id").as_s)).not_to contain(post5.id.to_s)
+          end
+        end
+
+        context "viewing a remote actor's posts" do
+          let_create(:actor, named: :remote_actor, local: false)
+          let_create!(:object, named: :post6, attributed_to: remote_actor, visible: true, published: Time.utc)
+          let_create!(:object, named: :post7, attributed_to: remote_actor, visible: false, published: Time.utc)
+
+          it "returns public statuses" do
+            get "/api/v1/accounts/#{remote_actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig("id").as_s)).to contain(post6.id.to_s)
+          end
+
+          it "excludes private statuses" do
+            get "/api/v1/accounts/#{remote_actor.id}/statuses", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json.as_a.map(&.dig("id").as_s)).not_to contain(post7.id.to_s)
           end
         end
       end
