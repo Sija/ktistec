@@ -20,7 +20,7 @@
 
     skip_auth ["/api/*"], OPTIONS
     skip_auth ["/api/v1/apps"], POST
-    skip_auth ["/api/v1/instance", "/api/v2/instance", "/api/v1/instance/translation_languages"], GET
+    skip_auth ["/api/v1/instance", "/api/v2/instance", "/api/v1/instance/translation_languages", "/api/v1/custom_emojis"], GET
 
     before_all "/api/*" do |env|
       env.response.headers.add("Access-Control-Allow-Origin", "*")
@@ -822,6 +822,21 @@
     get "/api/v1/followed_tags" do |env|
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"
+      end
+
+      "[]"
+    end
+
+    get "/api/v1/custom_emojis" do |env|
+      "[]"
+    end
+
+    get "/api/v1/accounts/:id/featured_tags" do |env|
+      unless env.account?
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless ActivityPub::Actor.find?(id_param(env))
+        not_found "api/error", error: "Actor not found"
       end
 
       "[]"

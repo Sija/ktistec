@@ -1826,5 +1826,45 @@
         end
       end
     end
+
+    describe "GET /api/v1/custom_emojis" do
+      it "succeeds" do
+        get "/api/v1/custom_emojis"
+        expect(response.status_code).to eq(200)
+      end
+
+      it "returns empty array" do
+        get "/api/v1/custom_emojis"
+        expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
+      end
+    end
+
+    describe "GET /api/v1/accounts/:id/featured_tags" do
+      let_create(:actor)
+
+      it "returns 401" do
+        get "/api/v1/accounts/#{actor.id}/featured_tags"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "when authorized" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "succeeds" do
+          get "/api/v1/accounts/#{actor.id}/featured_tags", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns empty array" do
+          get "/api/v1/accounts/#{actor.id}/featured_tags", headers: json_bearer_headers(access_token.token)
+          expect(JSON.parse(response.body)).to eq(JSON.parse("[]"))
+        end
+
+        it "returns 404" do
+          get "/api/v1/accounts/999999/featured_tags", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+      end
+    end
   end
 {% end %}
