@@ -1497,6 +1497,64 @@ Spectator.describe ActivityPub::Actor do
     end
   end
 
+  describe "#known_posts" do
+    subject { described_class.new(iri: "https://test.test/#{random_string}").save }
+
+    macro post(index)
+      let_create!(
+        :object, named: post{{index}},
+        attributed_to: subject,
+        published: Time.utc(2016, 2, 15, 10, 20, {{index}}),
+        visible: {{index}}.odd?
+      )
+    end
+
+    post(1)
+    post(2)
+    post(3)
+    post(4)
+    post(5)
+
+    it "instantiates the correct subclass" do
+      expect(subject.known_posts(limit: 2).first).to be_a(ActivityPub::Object)
+    end
+
+    it "filters out non-public posts" do
+      expect(subject.known_posts(limit: 2)).to eq([post5, post3])
+    end
+
+    it "filters out deleted posts" do
+      post5.delete!
+      expect(subject.known_posts(limit: 3)).to eq([post3, post1])
+    end
+
+    it "filters out blocked posts" do
+      post5.block!
+      expect(subject.known_posts(limit: 3)).to eq([post3, post1])
+    end
+
+    it "filters out draft posts" do
+      post5.assign(published: nil).save
+      expect(subject.known_posts(limit: 3)).to eq([post3, post1])
+    end
+
+    it "paginates with max_id" do
+      expect(subject.known_posts(max_id: post5.id, limit: 2)).to eq([post3, post1])
+    end
+
+    it "paginates with min_id" do
+      expect(subject.known_posts(min_id: post1.id, limit: 2)).to eq([post5, post3])
+    end
+
+    it "reports more results" do
+      expect(subject.known_posts(min_id: post1.id, limit: 1).more?).to be_true
+    end
+
+    it "reports no more results" do
+      expect(subject.known_posts(limit: 5).more?).not_to be_true
+    end
+  end
+
   describe "#public_posts_with_pins" do
     subject { described_class.new(iri: "https://test.test/#{random_string}").save }
 

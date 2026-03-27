@@ -716,6 +716,29 @@ module ActivityPub
       Object.query_and_paginate(query, self.iri, self.iri, page: page, size: size)
     end
 
+    # Returns the actor's known posts.
+    #
+    # Meant to be called on both local and cached actors.
+    #
+    # Does not include private (not visible) posts.
+    #
+    # Note: The offset-based overload prioritizes pinned posts; this
+    # cursor-based overload does not. A pin-aware cursor variant will
+    # be needed when offset-based pagination is retired.
+    #
+    def known_posts(*, max_id = nil, min_id = nil, limit = 10)
+      query = <<-QUERY
+         SELECT #{Object.columns(prefix: "o")}
+           FROM objects AS o
+          WHERE o.attributed_to_iri = ?
+            #{common_filters(objects: "o")}
+            AND o.published IS NOT NULL
+            AND o.visible = 1
+            AND %{cursor_condition}
+      QUERY
+      Object.query_with_cursor(query, self.iri, cursor_column: "o.id", max_id: max_id, min_id: min_id, limit: limit)
+    end
+
     # Returns the actor's public posts and shares.
     #
     # Meant to be called on local (not cached) actors.
