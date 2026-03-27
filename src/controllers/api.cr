@@ -121,6 +121,21 @@
       API::V1::Serializers::Account.from_account(account, account.actor, include_source: true).to_json
     end
 
+    get "/api/v1/accounts/:id" do |env|
+      unless env.account?
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+      unless (actor = ActivityPub::Actor.find?(id_param(env)))
+        not_found "api/error", error: "Actor not found"
+      end
+
+      if actor.local? && (account = Account.find?(iri: actor.iri))
+        API::V1::Serializers::Account.from_account(account, actor).to_json
+      else
+        API::V1::Serializers::Account.from_actor(actor).to_json
+      end
+    end
+
     get "/api/v1/accounts/:id/statuses" do |env|
       unless (account = env.account?)
         unauthorized "api/error", error: "The access token is invalid"

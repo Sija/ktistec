@@ -379,6 +379,66 @@
       end
     end
 
+    describe "GET /api/v1/accounts/:id" do
+      let_create(:actor)
+
+      it "returns 401" do
+        get "/api/v1/accounts/#{actor.id}"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "when authorized" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "returns 404" do
+          get "/api/v1/accounts/999999", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        context "with a local actor" do
+          let(local_actor) { register.actor }
+
+          it "succeeds" do
+            get "/api/v1/accounts/#{local_actor.id}", headers: json_bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+
+          it "returns the actor's id" do
+            get "/api/v1/accounts/#{local_actor.id}", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json["id"]).to eq(local_actor.id.to_s)
+          end
+
+          it "returns locked" do
+            get "/api/v1/accounts/#{local_actor.id}", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json["locked"]).to eq(true)
+          end
+        end
+
+        context "with a remote actor" do
+          before_each { actor.assign(username: "remote").save }
+
+          it "succeeds" do
+            get "/api/v1/accounts/#{actor.id}", headers: json_bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+
+          it "returns the actor's id" do
+            get "/api/v1/accounts/#{actor.id}", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json["id"]).to eq(actor.id.to_s)
+          end
+
+          it "returns locked" do
+            get "/api/v1/accounts/#{actor.id}", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json["locked"]).to eq(false)
+          end
+        end
+      end
+    end
+
     describe "GET /api/v1/accounts/:id/statuses" do
       macro published_post(index, actor, visible = true)
         let_create(:object, named: post\{{index}}, attributed_to: \{{actor}}, visible: \{{visible}}, local: true, published: Time.utc)
