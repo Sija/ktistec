@@ -121,6 +121,27 @@
       API::V1::Serializers::Account.from_account(account, account.actor, include_source: true).to_json
     end
 
+    get "/api/v1/accounts" do |env|
+      unless env.account?
+        unauthorized "api/error", error: "The access token is invalid"
+      end
+
+      ids = env.params.query.fetch_all("id[]")
+
+      accounts = ids.compact_map do |id|
+        if (actor = ActivityPub::Actor.find?(id.to_i64))
+          if actor.local? && (account = Account.find?(iri: actor.iri))
+            API::V1::Serializers::Account.from_account(account, actor)
+          else
+            API::V1::Serializers::Account.from_actor(actor)
+          end
+        end
+      rescue ArgumentError
+      end
+
+      accounts.to_json
+    end
+
     get "/api/v1/accounts/lookup" do |env|
       unless env.account?
         unauthorized "api/error", error: "The access token is invalid"

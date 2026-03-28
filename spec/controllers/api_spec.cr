@@ -379,6 +379,54 @@
       end
     end
 
+    describe "GET /api/v1/accounts" do
+      it "returns 401" do
+        get "/api/v1/accounts"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "when authorized" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+        let_create(:actor, named: :local, local: true)
+        let_create(:actor, named: :remote)
+
+        it "succeeds" do
+          get "/api/v1/accounts", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(200)
+        end
+
+        it "returns empty array" do
+          get "/api/v1/accounts", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a).to be_empty
+        end
+
+        it "returns multiple accounts" do
+          get "/api/v1/accounts?id%5B%5D=#{local.id}&id%5B%5D=#{remote.id}", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.size).to eq(2)
+        end
+
+        it "returns the actors's ids" do
+          get "/api/v1/accounts?id%5B%5D=#{local.id}&id%5B%5D=#{remote.id}", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.map(&.dig?("id"))).to eq([local.id.to_s, remote.id.to_s])
+        end
+
+        it "skips unknown ids" do
+          get "/api/v1/accounts?id%5B%5D=#{local.id}&id%5B%5D=999999", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.size).to eq(1)
+        end
+
+        it "skips bad ids" do
+          get "/api/v1/accounts?id%5B%5D=#{local.id}&id%5B%5D=abc", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.size).to eq(1)
+        end
+      end
+    end
+
     describe "GET /api/v1/accounts/lookup" do
       it "returns 401" do
         get "/api/v1/accounts/lookup?acct=nobody@nowhere"
