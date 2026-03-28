@@ -379,6 +379,47 @@
       end
     end
 
+    describe "GET /api/v1/accounts/lookup" do
+      it "returns 401" do
+        get "/api/v1/accounts/lookup?acct=nobody@nowhere"
+        expect(response.status_code).to eq(401)
+      end
+
+      context "when authorized" do
+        let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account)
+
+        it "returns 404" do
+          get "/api/v1/accounts/lookup", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        it "returns 404" do
+          get "/api/v1/accounts/lookup?acct=nobody@nowhere", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        it "returns 404" do
+          get "/api/v1/accounts/lookup?acct=user@host@host", headers: json_bearer_headers(access_token.token)
+          expect(response.status_code).to eq(404)
+        end
+
+        context "given an existing actor" do
+          let_create!(:actor, username: "foobar")
+
+          it "succeeds" do
+            get "/api/v1/accounts/lookup?acct=foobar@remote", headers: json_bearer_headers(access_token.token)
+            expect(response.status_code).to eq(200)
+          end
+
+          it "returns the actor's id" do
+            get "/api/v1/accounts/lookup?acct=foobar@remote", headers: json_bearer_headers(access_token.token)
+            json = JSON.parse(response.body)
+            expect(json["id"]).to eq(actor.id.to_s)
+          end
+        end
+      end
+    end
+
     describe "GET /api/v1/accounts/:id" do
       let_create(:actor)
 
