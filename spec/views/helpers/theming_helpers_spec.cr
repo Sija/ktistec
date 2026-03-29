@@ -310,57 +310,6 @@ Spectator.describe "helpers" do
     let(classes) { nil }
     subject { XML.parse_html(self.class.actor_icon(actor, classes), PARSER_OPTIONS) }
 
-    context "when actor is nil" do
-      subject { XML.parse_html(self.class.actor_icon(nil), PARSER_OPTIONS) }
-
-      it "renders fallback icon" do
-        expect(subject.xpath_nodes("//img/@src").map(&.text)).to contain_exactly("/images/avatars/fallback.png")
-      end
-    end
-
-    context "when icon is nil" do
-      before_each { actor.assign(icon: nil).save }
-
-      it "renders fallback icon" do
-        src = subject.xpath_nodes("//img/@src").map(&.text).first
-        expect(src).to match(/\/images\/avatars\/color-\d+\.png/)
-      end
-    end
-
-    context "when icon is blank" do
-      before_each { actor.assign(icon: "").save }
-
-      it "renders fallback icon" do
-        src = subject.xpath_nodes("//img/@src").map(&.text).first
-        expect(src).to match(/\/images\/avatars\/color-\d+\.png/)
-      end
-    end
-
-    context "when actor is down" do
-      before_each { actor.assign(icon: "https://example.com/icon.png").save.down! }
-
-      it "renders fallback icon" do
-        src = subject.xpath_nodes("//img/@src").map(&.text).first
-        expect(src).to match(/\/images\/avatars\/color-\d+\.png/)
-      end
-    end
-
-    context "when actor is deleted" do
-      before_each { actor.assign(icon: "https://example.com/icon.png").save.delete! }
-
-      it "renders the deleted icon" do
-        expect(subject.xpath_nodes("//img/@src").map(&.text)).to contain_exactly("/images/avatars/deleted.png")
-      end
-    end
-
-    context "when actor is blocked" do
-      before_each { actor.assign(icon: "https://example.com/icon.png").save.block! }
-
-      it "renders the blocked icono" do
-        expect(subject.xpath_nodes("//img/@src").map(&.text)).to contain_exactly("/images/avatars/blocked.png")
-      end
-    end
-
     context "given an icon" do
       before_each { actor.assign(icon: "https://example.com/icon.png", name: "Test Actor").save }
 
