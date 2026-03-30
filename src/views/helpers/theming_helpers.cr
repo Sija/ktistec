@@ -1,3 +1,5 @@
+require "../../utils/avatar"
+
 module Ktistec::ViewHelper
   module ClassMethods
     def actor_states(object, author, actor, followed_actors)
@@ -94,31 +96,19 @@ module Ktistec::ViewHelper
       object ? "object-#{object.type.split("::").last.downcase}" : ""
     end
 
-    ACTOR_COLOR_COUNT = 12
-
     def actor_icon(actor, classes = nil)
+      src = Utils::Avatar.url_for(actor)
       if actor
         if actor.deleted?
-          src = "/images/avatars/deleted.png"
           alt = "Deleted user"
         elsif actor.blocked?
-          src = "/images/avatars/blocked.png"
           alt = "Blocked user"
-        elsif !actor.down? && (icon = actor.icon.presence)
-          src = icon
+        elsif actor.id
           alt = actor.display_name
         else
-          if (actor_id = actor.id)
-            color = actor_id % ACTOR_COLOR_COUNT
-            src = "/images/avatars/color-#{color}.png"
-            alt = actor.display_name
-          else
-            src = "/images/avatars/fallback.png"
-            alt = "User"
-          end
+          alt = "User"
         end
       else
-        src = "/images/avatars/fallback.png"
         alt = "User"
       end
       attrs = [
