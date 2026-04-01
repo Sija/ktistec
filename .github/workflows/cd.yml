@@ -2,7 +2,7 @@
 on:
   push:
     tags:
-      - "v*.*.*":
+      - "v*.*.*"
 
 # deploy to github's image registry
 env:
