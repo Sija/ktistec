@@ -212,7 +212,7 @@ module ThreadAnalysisService
       end
     end
 
-    return nil if objects.size < 2
+    return if objects.size < 2
 
     objects.sort_by! { |o| o[:published] }
 

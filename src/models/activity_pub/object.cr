@@ -192,7 +192,7 @@ module ActivityPub
       end
 
       def normalized_focal_point
-        return nil unless has_focal_point?
+        return unless has_focal_point?
         x, y = focal_point.not_nil!
         norm_x = x / 2 + 0.5  # normalized x = x / 2 + 0.5
         norm_y = -y / 2 + 0.5 # normalized y = -y / 2 + 0.5 (y inverted)
