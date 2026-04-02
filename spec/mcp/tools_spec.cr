@@ -394,7 +394,7 @@ Spectator.describe MCP::Tools do
         expect(tags_schema["items"]["type"]).to eq("string")
         expect(tags_schema["minItems"]).to eq(1)
         expect(tags_schema["maxItems"]).to eq(8)
-        expect(tags_schema["uniqueItems"]).to eq(true)
+        expect(tags_schema["uniqueItems"]).to be_true
 
         scores_schema = properties["scores"]
         expect(scores_schema["type"]).to eq("array")
@@ -1346,7 +1346,7 @@ Spectator.describe MCP::Tools do
             relationship = objects.first.as_h
             expect(relationship["actor_id"].as_i64).to eq(follower.id)
             expect(relationship["actor_handle"].as_s).to eq(follower.handle)
-            expect(relationship["confirmed"]).to eq(true)
+            expect(relationship["confirmed"]).to be_true
           end
 
           context "and an unconfirmed follower" do
@@ -1360,11 +1360,11 @@ Spectator.describe MCP::Tools do
 
               unconfirmed_relationship = objects[0].as_h
               expect(unconfirmed_relationship["actor_id"].as_i64).to eq(unconfirmed_follower.id)
-              expect(unconfirmed_relationship["confirmed"]).to eq(false)
+              expect(unconfirmed_relationship["confirmed"]).to be_false
 
               confirmed_relationship = objects[1].as_h
               expect(confirmed_relationship["actor_id"].as_i64).to eq(follower.id)
-              expect(confirmed_relationship["confirmed"]).to eq(true)
+              expect(confirmed_relationship["confirmed"]).to be_true
             end
 
             it "supports pagination for followers collection" do
@@ -1401,7 +1401,7 @@ Spectator.describe MCP::Tools do
             relationship = objects.first.as_h
             expect(relationship["actor_id"].as_i64).to eq(followed_actor.id)
             expect(relationship["actor_handle"].as_s).to eq(followed_actor.handle)
-            expect(relationship["confirmed"]).to eq(true)
+            expect(relationship["confirmed"]).to be_true
           end
 
           context "and an unconfirmed following" do
@@ -1415,11 +1415,11 @@ Spectator.describe MCP::Tools do
 
               unconfirmed_relationship = objects[0].as_h
               expect(unconfirmed_relationship["actor_id"].as_i64).to eq(unconfirmed_followed.id)
-              expect(unconfirmed_relationship["confirmed"]).to eq(false)
+              expect(unconfirmed_relationship["confirmed"]).to be_false
 
               confirmed_relationship = objects[1].as_h
               expect(confirmed_relationship["actor_id"].as_i64).to eq(followed_actor.id)
-              expect(confirmed_relationship["confirmed"]).to eq(true)
+              expect(confirmed_relationship["confirmed"]).to be_true
             end
 
             it "supports pagination for following collection" do
@@ -2104,7 +2104,7 @@ Spectator.describe MCP::Tools do
 
         expect(data["objects"].as_a.size).to eq(1)
         expect(data["cursor"].as_s).not_to be_nil
-        expect(data["has_more"]).to eq(true)
+        expect(data["has_more"]).to be_true
       end
 
       it "fetches subsequent pages using cursor" do
@@ -2116,7 +2116,7 @@ Spectator.describe MCP::Tools do
 
         expect(data["objects"].as_a.size).to eq(1)
         expect(data["cursor"].as_s).not_to be_nil
-        expect(data["has_more"]).to eq(true)
+        expect(data["has_more"]).to be_true
 
         cursor = data["cursor"].as_s
 
@@ -2128,7 +2128,7 @@ Spectator.describe MCP::Tools do
 
         expect(data["objects"].as_a.size).to eq(1)
         expect(data["cursor"].as_s).not_to be_nil
-        expect(data["has_more"]).to eq(true)
+        expect(data["has_more"]).to be_true
       end
 
       it "returns nil cursor on last page" do
@@ -2140,7 +2140,7 @@ Spectator.describe MCP::Tools do
 
         expect(data["objects"].as_a.size).to eq(3)
         expect(data["cursor"].as_s).not_to be_nil
-        expect(data["has_more"]).to eq(true)
+        expect(data["has_more"]).to be_true
 
         cursor = data["cursor"].as_s
 
@@ -2152,7 +2152,7 @@ Spectator.describe MCP::Tools do
 
         expect(data["objects"].as_a.size).to eq(1)
         expect(data["cursor"].as_nil).to be_nil
-        expect(data["has_more"]).to eq(false)
+        expect(data["has_more"]).to be_false
       end
 
       it "raises error for invalid cursor" do

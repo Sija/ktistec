@@ -499,7 +499,7 @@ Spectator.describe ActivityPub::Actor do
         end
 
         it "renders manuallyApprovesFollowers as false" do
-          expect(JSON.parse(account.actor.to_json_ld).as_h["manuallyApprovesFollowers"]).to eq(false)
+          expect(JSON.parse(account.actor.to_json_ld).as_h["manuallyApprovesFollowers"]).to be_false
         end
       end
 
@@ -509,7 +509,7 @@ Spectator.describe ActivityPub::Actor do
         end
 
         it "renders manuallyApprovesFollowers as true" do
-          expect(JSON.parse(account.actor.to_json_ld).as_h["manuallyApprovesFollowers"]).to eq(true)
+          expect(JSON.parse(account.actor.to_json_ld).as_h["manuallyApprovesFollowers"]).to be_true
         end
       end
     end

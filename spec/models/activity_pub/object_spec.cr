@@ -931,7 +931,7 @@ Spectator.describe ActivityPub::Object do
         iri: "https://test.test/object",
         sensitive: true
       ).save
-      expect(JSON.parse(object.to_json_ld).as_h["sensitive"]).to eq(true)
+      expect(JSON.parse(object.to_json_ld).as_h["sensitive"]).to be_true
     end
 
     it "does not render sensitive property when false" do

@@ -398,7 +398,7 @@ Spectator.describe MCP::Resources do
           expect(json["summary"]).to eq("This is a translated summary")
           expect(json["content"]).to eq("This is translated content")
           expect(json["original_language"]).to eq("en")
-          expect(json["is_translated"]).to eq(true)
+          expect(json["is_translated"]).to be_true
         end
       end
 
