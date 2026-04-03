@@ -253,7 +253,7 @@ class APIController
     id = env.params.url["id"].to_i64
 
     unless (object = ActivityPub::Object.find?(id))
-      not_found "api/error", error: "Record not found"
+      not_found "api/error", error: "Object not found"
     end
 
     API::V1::Serializers::Status.from_object(object, actor: account.actor).to_json
@@ -268,7 +268,7 @@ class APIController
     id = env.params.url["id"].to_i64
 
     unless (object = ActivityPub::Object.find?(id))
-      not_found "api/error", error: "Record not found"
+      not_found "api/error", error: "Object not found"
     end
 
     ancestors = object.ancestors.reject(&.id.== object.id).map do |ancestor|
