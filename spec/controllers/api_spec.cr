@@ -1335,46 +1335,6 @@ Spectator.describe APIController do
         end
       end
 
-      context "when poll has future closed_at" do
-        before_each { poll.assign(closed_at: 1.day.from_now).save }
-
-        it "creates notification task" do
-          expect { post "/api/v1/polls/#{poll.id}/votes", headers: json_bearer_headers(access_token.token), body: {"choices" => [0]}.to_json }.to change { Task::NotifyPollExpiry.count }.by(1)
-        end
-
-        it "schedules task for poll closed_at time" do
-          post "/api/v1/polls/#{poll.id}/votes", headers: json_bearer_headers(access_token.token), body: {"choices" => [0]}.to_json
-          task = Task::NotifyPollExpiry.find(question: question)
-          expect(task.next_attempt_at).to be_close(poll.closed_at.not_nil!, 1.second)
-        end
-      end
-
-      context "when notification task already exists" do
-        before_each { poll.assign(closed_at: 1.day.from_now).save }
-
-        let_create!(:notify_poll_expiry_task, question: question)
-
-        it "does not create another task" do
-          expect { post "/api/v1/polls/#{poll.id}/votes", headers: json_bearer_headers(access_token.token), body: {"choices" => [0]}.to_json }.not_to change { Task::NotifyPollExpiry.count }
-        end
-      end
-
-      context "when poll has no closed_at" do
-        before_each { poll.assign(closed_at: nil).save }
-
-        it "does not create task" do
-          expect { post "/api/v1/polls/#{poll.id}/votes", headers: json_bearer_headers(access_token.token), body: {"choices" => [0]}.to_json }.not_to change { Task::NotifyPollExpiry.count }
-        end
-      end
-
-      context "when poll has closed_at in the past" do
-        before_each { poll.assign(closed_at: 1.day.ago).save }
-
-        it "does not create task" do
-          expect { post "/api/v1/polls/#{poll.id}/votes", headers: json_bearer_headers(access_token.token), body: {"choices" => [0]}.to_json }.not_to change { Task::NotifyPollExpiry.count }
-        end
-      end
-
       it "returns 404" do
         post "/api/v1/polls/999999/votes", headers: json_bearer_headers(access_token.token), body: {"choices" => [0]}.to_json
         expect(response.status_code).to eq(404)

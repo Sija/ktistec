@@ -617,14 +617,6 @@ class APIController
         cc: vote.cc,
       ).save
 
-      if (closed_at = poll.closed_at)
-        if closed_at > now
-          unless Task::NotifyPollExpiry.find?(question: question)
-            Task::NotifyPollExpiry.new(source_iri: "", question: question).schedule(closed_at)
-          end
-        end
-      end
-
       OutboxActivityProcessor.process(account, activity)
     end
 

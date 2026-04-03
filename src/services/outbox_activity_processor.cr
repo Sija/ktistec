@@ -54,6 +54,20 @@ class OutboxActivityProcessor
             end
           end
         end
+      when ActivityPub::Object::Note
+        if object.special == "vote"
+          if (question = object.in_reply_to?).is_a?(ActivityPub::Object::Question)
+            if (poll = question.poll?)
+              if (closed_at = poll.closed_at)
+                if closed_at > Time.utc
+                  unless Task::NotifyPollExpiry.find?(question: question)
+                    Task::NotifyPollExpiry.new(source_iri: "", question: question).schedule(closed_at)
+                  end
+                end
+              end
+            end
+          end
+        end
       end
     when ActivityPub::Activity::Follow
       unless Relationship::Social::Follow.find?(actor: activity.actor, object: activity.object, visible: false)
