@@ -40,7 +40,7 @@ class OutboxActivityProcessor
         if object.local? && !Task::DistributePollUpdates.find?(question: object)
           Task::DistributePollUpdates.new(
             actor: activity.actor,
-            question: object
+            question: object,
           ).schedule(Task::DistributePollUpdates::CHECK_INTERVAL.from_now)
         end
         if object.local?
@@ -60,7 +60,7 @@ class OutboxActivityProcessor
         Relationship::Social::Follow.new(
           actor: activity.actor,
           object: activity.object,
-          visible: false
+          visible: false,
         ).save(skip_associated: true)
       end
     when ActivityPub::Activity::Accept
@@ -94,7 +94,7 @@ class OutboxActivityProcessor
 
     deliver_task_class.new(
       sender: account.actor,
-      activity: activity
+      activity: activity,
     ).schedule
   end
 end

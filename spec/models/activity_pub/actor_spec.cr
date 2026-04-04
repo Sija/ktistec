@@ -55,7 +55,7 @@ Spectator.describe ActivityPub::Actor do
         iri: "https://bar.com/actor",
         username: "foo",
         urls: ["https://bar.com/@foo"],
-        attachments: [] of ActivityPub::Actor::Attachment
+        attachments: [] of ActivityPub::Actor::Attachment,
       ).save
     end
 
@@ -520,7 +520,7 @@ Spectator.describe ActivityPub::Actor do
       described_class.new(
         iri: "https://test.test/actors/actor",
         followers: "followers",
-        following: "following"
+        following: "following",
       )
     end
 
@@ -2291,7 +2291,7 @@ Spectator.describe ActivityPub::Actor do
   context "approvals" do
     subject! do
       described_class.new(
-        iri: "https://test.test/actors/actor"
+        iri: "https://test.test/actors/actor",
       ).save
     end
 

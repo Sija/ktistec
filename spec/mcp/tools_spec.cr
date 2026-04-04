@@ -1667,13 +1667,13 @@ Spectator.describe MCP::Tools do
           named: tagged_post,
           attributed_to: account.actor,
           content: "Post with #testhashtag",
-          published: Time.utc(2024, 1, 1, 10, 0, 0)
+          published: Time.utc(2024, 1, 1, 10, 0, 0),
         )
         let_create!(
           :hashtag,
           name: "testhashtag",
           subject: tagged_post,
-          created_at: Time.utc(2024, 1, 1, 10, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 10, 0, 0),
         )
 
         it "returns count for valid hashtag" do
@@ -1695,13 +1695,13 @@ Spectator.describe MCP::Tools do
           named: mentioned_post,
           attributed_to: account.actor,
           content: "Post mentioning @testuser@example.com",
-          published: Time.utc(2024, 1, 1, 10, 0, 0)
+          published: Time.utc(2024, 1, 1, 10, 0, 0),
         )
         let_create!(
           :mention,
           name: "testuser@example.com",
           subject: mentioned_post,
-          created_at: Time.utc(2024, 1, 1, 10, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 10, 0, 0),
         )
 
         it "returns count for valid mention" do
@@ -1722,13 +1722,13 @@ Spectator.describe MCP::Tools do
           :like,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 10, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 10, 0, 0),
         )
         let_create!(
           :like,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 12, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 12, 0, 0),
         )
 
         it "returns count for likes collection" do
@@ -1749,13 +1749,13 @@ Spectator.describe MCP::Tools do
           :dislike,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 10, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 10, 0, 0),
         )
         let_create!(
           :dislike,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 12, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 12, 0, 0),
         )
 
         it "returns count for dislikes collection" do
@@ -1776,13 +1776,13 @@ Spectator.describe MCP::Tools do
           :announce,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 10, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 10, 0, 0),
         )
         let_create!(
           :announce,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 12, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 12, 0, 0),
         )
 
         it "returns count for announces collection" do
@@ -1803,13 +1803,13 @@ Spectator.describe MCP::Tools do
           :bookmark_relationship,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 10, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 10, 0, 0),
         )
         let_create!(
           :bookmark_relationship,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 12, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 12, 0, 0),
         )
 
         it "returns count for bookmarks collection" do
@@ -1830,13 +1830,13 @@ Spectator.describe MCP::Tools do
           :pin_relationship,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 10, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 10, 0, 0),
         )
         let_create!(
           :pin_relationship,
           named: nil,
           actor: account.actor,
-          created_at: Time.utc(2024, 1, 1, 12, 0, 0)
+          created_at: Time.utc(2024, 1, 1, 12, 0, 0),
         )
 
         it "returns count for pins collection" do
@@ -2191,7 +2191,7 @@ Spectator.describe MCP::Tools do
 
       private def analyze_thread_request(id, object_id)
         JSON::RPC::Request.from_json(
-          %Q|{"jsonrpc": "2.0", "id": "#{id}", "method": "tools/call", "params": {"name": "analyze_thread", "arguments": {"object_id": #{object_id}}}}|
+          %Q|{"jsonrpc": "2.0", "id": "#{id}", "method": "tools/call", "params": {"name": "analyze_thread", "arguments": {"object_id": #{object_id}}}}|,
         )
       end
 

@@ -853,7 +853,7 @@ module ActivityPub
         timeline_histogram: histogram,
         key_participants: participants.not_nil!,
         notable_branches: branches.not_nil!,
-        duration_ms: duration.total_milliseconds
+        duration_ms: duration.total_milliseconds,
       )
     end
 
@@ -1106,7 +1106,7 @@ module ActivityPub
         actor: attributed_to,
         object: self,
         to: to,
-        cc: cc
+        cc: cc,
       )
     end
 

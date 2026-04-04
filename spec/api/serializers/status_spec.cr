@@ -245,7 +245,7 @@ Spectator.describe API::V1::Serializers::Status do
               caption: "An image",
               focal_point: {0.5, -0.25},
             ),
-          ]
+          ],
         ).save
       end
 
@@ -438,7 +438,7 @@ Spectator.describe API::V1::Serializers::Status do
           quote_authorization: quote_authorization,
           interacting_object: quoting,
           interaction_target: quoted,
-          decision: "accept"
+          decision: "accept",
         )
 
         before_each { quoting.assign(quote_authorization: quote_authorization).save }
@@ -468,7 +468,7 @@ Spectator.describe API::V1::Serializers::Status do
           quote_authorization: quote_authorization,
           interacting_object: quoting,
           interaction_target: quoted,
-          decision: "reject"
+          decision: "reject",
         )
 
         before_each { quoting.assign(quote_authorization: quote_authorization).save }
