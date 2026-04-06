@@ -15,6 +15,12 @@ Naming/BlockParameterName:
 Style/NegatedConditionsInUnless:
   Enabled: false
 
+Style/PercentLiteralDelimiters:
+  Enabled: false
+
+Style/RedundantSelf:
+  Enabled: false
+
 ## Configured
 
 Style/ParenthesesAroundCondition:
