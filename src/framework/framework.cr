@@ -218,8 +218,7 @@ module Ktistec
       with new yield
 
       unless Kemal.config.env == "test"
-        Signal::INT.trap { shutdown }
-        Signal::TERM.trap { shutdown }
+        Process.on_terminate { shutdown }
       end
 
       Kemal.config.app_name = "Ktistec"
