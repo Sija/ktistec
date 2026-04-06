@@ -114,7 +114,7 @@ Spectator.describe MCPController do
 
   describe "POST /mcp" do
     context "with MCP initialize request" do
-      let(json) {
+      let(json) do
         %Q|
           {
             "jsonrpc": "2.0",
@@ -133,7 +133,7 @@ Spectator.describe MCPController do
             }
           }
         |
-      }
+      end
 
       it "returns proper MCP initialize response" do
         post "/mcp", authenticated_headers, json
