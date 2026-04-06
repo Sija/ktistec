@@ -862,7 +862,7 @@ module ActivityPub
 
         query = <<-QUERY
         #{thread_query_with_recursive}
-        SELECT {{select_parts.join(", ").id}}
+        SELECT {{ select_parts.join(", ").id }}
           FROM objects AS o, replies_to AS r
           {% if needs_hashtag_join %}
           LEFT JOIN tags AS ht ON ht.subject_iri = o.iri AND ht.type = 'Tag::Hashtag'

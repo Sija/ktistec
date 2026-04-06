@@ -355,10 +355,10 @@ Spectator.describe ActivityPub::Object::Question do
   macro vote(index, actor = actor)
     let_create!(
       :note,
-      named: vote{{index}},
-      name: poll.options[{{index}}].name,
+      named: vote{{ index }},
+      name: poll.options[{{ index }}].name,
       in_reply_to: question,
-      attributed_to: {{actor}},
+      attributed_to: {{ actor }},
       content: nil,
       special: "vote",
     )

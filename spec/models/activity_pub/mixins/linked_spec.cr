@@ -18,7 +18,7 @@ Spectator.describe Ktistec::Model::Linked do
     @[Persistent]
     property linked_model_iri : String?
 
-    belongs_to linked_model, class_name: {{@type}}, foreign_key: linked_model_iri, primary_key: iri
+    belongs_to linked_model, class_name: {{ @type }}, foreign_key: linked_model_iri, primary_key: iri
 
     def to_json_ld(**options)
       JSON.build do |json|

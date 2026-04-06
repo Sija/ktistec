@@ -1051,16 +1051,16 @@ Spectator.describe Ktistec::Model do
       @@table_name = "not_nil_models"
 
       macro def_callback(name)
-        getter {{"before_#{name.id}_called".id}} = false
+        getter {{ "before_#{name.id}_called".id }} = false
 
-        def before_{{name.id}}
-          @before_{{name.id}}_called = true
+        def before_{{ name.id }}
+          @before_{{ name.id }}_called = true
         end
 
-        getter {{"after_#{name.id}_called".id}} = false
+        getter {{ "after_#{name.id}_called".id }} = false
 
-        def after_{{name.id}}
-          @after_{{name.id}}_called = true
+        def after_{{ name.id }}
+          @after_{{ name.id }}_called = true
         end
       end
 

@@ -355,7 +355,7 @@ Spectator.describe SettingsController do
         end
 
         macro uploaded_image(actor)
-          "#{Dir.tempdir}#{URI.parse({{actor}}.reload!.image.not_nil!).path}"
+          "#{Dir.tempdir}#{URI.parse({{ actor }}.reload!.image.not_nil!).path}"
         end
 
         it "updates the image" do
@@ -667,7 +667,7 @@ Spectator.describe SettingsController do
         end
 
         macro uploaded_image(settings)
-          "#{Dir.tempdir}#{URI.parse(Ktistec.{{settings}}.image.not_nil!).path}"
+          "#{Dir.tempdir}#{URI.parse(Ktistec.{{ settings }}.image.not_nil!).path}"
         end
 
         it "updates the image" do

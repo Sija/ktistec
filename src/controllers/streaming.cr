@@ -104,11 +104,11 @@ class StreamingController
   @@sessions_pools = Hash(Session, ConnectionPool).new { |h, k| h[k] = ConnectionPool.new(5) }
 
   private macro subscribe(*subjects, &block)
-    Ktistec::Topic{{{subjects.splat}}}.tap do |topic|
+    Ktistec::Topic{{ {subjects.splat} }}.tap do |topic|
       @@sessions_pools[env.session].push(env.response.@io)
-      topic.subscribe(timeout: 1.minute) do |{{block.args.join(",").id}}|
-        if {{block.args.first.id}}
-          {{block.body}}
+      topic.subscribe(timeout: 1.minute) do |{{ block.args.join(",").id }}|
+        if {{ block.args.first.id }}
+          {{ block.body }}
         else # timeout
           stream_no_op(env.response)
         end
@@ -319,8 +319,8 @@ class StreamingController
   end
 
   {% for action in %w(append prepend replace update remove before after morph refresh) %}
-    def self.stream_{{action.id}}(io, body = nil, target = nil, selector = nil, id = false)
-      stream_action(io, body, {{action}}, target, selector, id)
+    def self.stream_{{ action.id }}(io, body = nil, target = nil, selector = nil, id = false)
+      stream_action(io, body, {{ action }}, target, selector, id)
     end
   {% end %}
 

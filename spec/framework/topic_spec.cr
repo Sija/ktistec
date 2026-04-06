@@ -49,7 +49,7 @@ Spectator.describe Ktistec::Topic do
   macro make_subscription(topic, &block)
     before_each do
       spawn do
-        {{topic}}.subscribe {{block}}
+        {{ topic }}.subscribe {{ block }}
       rescue
       end
       Fiber.yield

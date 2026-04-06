@@ -145,18 +145,18 @@ module Ktistec
 
   class Settings
     {% for property, type in PROPERTIES %}
-      setter {{property.id}} : {{type.id}}?
+      setter {{ property.id }} : {{ type.id }}?
 
-      def clear_{{property.id}}
-        Ktistec.database.exec("DELETE FROM options WHERE key = ?", "{{property.id}}")
-        @{{property.id}} = nil
+      def clear_{{ property.id }}
+        Ktistec.database.exec("DELETE FROM options WHERE key = ?", "{{ property.id }}")
+        @{{ property.id }} = nil
       end
     {% end %}
   end
 
   def self.clear_settings
     {% for property in Settings::PROPERTIES %}
-      settings.clear_{{property.id}}
+      settings.clear_{{ property.id }}
     {% end %}
     @@settings = nil
   end

@@ -36,7 +36,7 @@ class MCPController
 
   private macro mcp_response(status_code, response)
     env.response.content_type = "application/json"
-    halt env, status_code: {{status_code}}, response: {{response}}.try(&.to_json)
+    halt env, status_code: {{ status_code }}, response: {{ response }}.try(&.to_json)
   end
 
   private macro set_headers
