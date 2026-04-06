@@ -671,8 +671,8 @@ Spectator.describe APIController do
         let_create(:object, named: :post2, attributed_to: other, published: Time.utc, visible: true)
 
         before_each do
-          put_in_timeline(actor, post1)
-          put_in_timeline(actor, post2)
+          put_in_timeline_create(actor, post1)
+          put_in_timeline_create(actor, post2)
         end
 
         it "returns statuses" do

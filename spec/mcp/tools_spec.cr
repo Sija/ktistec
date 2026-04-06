@@ -864,7 +864,7 @@ Spectator.describe MCP::Tools do
         let_create!(:object, attributed_to: account.actor, published: now)
 
         before_each do
-          put_in_timeline(account.actor, object)
+          put_in_timeline_create(account.actor, object)
         end
 
         it "returns timeline objects for valid request" do
@@ -930,7 +930,7 @@ Spectator.describe MCP::Tools do
         before_each do
           25.times do
             object = Factory.create(:object) # ameba:disable Ktistec/NoImperativeFactories
-            put_in_timeline(account.actor, object)
+            put_in_timeline_create(account.actor, object)
           end
         end
 
@@ -1561,9 +1561,9 @@ Spectator.describe MCP::Tools do
         let_create(:object, named: object3, attributed_to: account.actor)
 
         before_each do
-          put_in_timeline(account.actor, object1)
-          put_in_timeline(account.actor, object2)
-          put_in_timeline(account.actor, object3)
+          put_in_timeline_create(account.actor, object1)
+          put_in_timeline_create(account.actor, object2)
+          put_in_timeline_create(account.actor, object3)
         end
 
         # the `since` cutoff is decided based on the `created_at`

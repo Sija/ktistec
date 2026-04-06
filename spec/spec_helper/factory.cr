@@ -564,8 +564,12 @@ def put_in_notifications(owner : ActivityPub::Actor, activity : ActivityPub::Act
   Factory.create(:notification_quote, owner: owner, activity: activity)
 end
 
-def put_in_timeline(owner : ActivityPub::Actor, object : ActivityPub::Object)
-  Factory.create(:timeline, owner: owner, object: object)
+def put_in_timeline_create(owner : ActivityPub::Actor, object : ActivityPub::Object)
+  Factory.create(:timeline_create, owner: owner, object: object)
+end
+
+def put_in_timeline_announce(owner : ActivityPub::Actor, object : ActivityPub::Object)
+  Factory.create(:timeline_announce, owner: owner, object: object)
 end
 
 def do_follow(actor : ActivityPub::Actor, object : ActivityPub::Actor)
