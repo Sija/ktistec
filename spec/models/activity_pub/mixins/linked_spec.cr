@@ -55,7 +55,7 @@ Spectator.describe Ktistec::Model::Linked do
         linked_model_iri text,
         deleted_at datetime
       )
-    SQL
+      SQL
   end
   after_each do
     Ktistec.database.exec "DROP TABLE IF EXISTS linked_models"

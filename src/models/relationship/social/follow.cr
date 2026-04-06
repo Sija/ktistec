@@ -32,7 +32,7 @@ class Relationship
              AND #{direction} = ?
           ORDER BY id DESC
            LIMIT ? OFFSET ?
-        QUERY
+          QUERY
       end
 
       private def self.follow_count_query(direction)
@@ -42,7 +42,7 @@ class Relationship
            WHERE type = '#{self}'
              AND #{direction} = ?
              AND created_at >= ?
-        QUERY
+          QUERY
       end
 
       # Returns followers.

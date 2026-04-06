@@ -302,7 +302,7 @@ Spectator.describe ActivityPub::Actor do
           {"type":"Emoji","name":":batman:","icon":{"type":"Image","mediaType":"image/png","url":"https://example.com/batman.png"}}
         ]
       }
-    JSON
+      JSON
   end
 
   describe ".map" do
@@ -320,7 +320,7 @@ Spectator.describe ActivityPub::Actor do
             "height": 120, "width": 120,
             "url": "second link"
           }]
-        ICON
+          ICON
       end
 
       let(json) { super.gsub(/"icon": {[^}]+}/, icon) }
@@ -342,7 +342,7 @@ Spectator.describe ActivityPub::Actor do
             "mediaType": "image/jpeg",
             "url": "second link"
           }]
-        ICON
+          ICON
       end
 
       let(json) { super.gsub(/"icon": {[^}]+}/, icon) }
@@ -364,7 +364,7 @@ Spectator.describe ActivityPub::Actor do
             "mediaType": "image/jpeg",
             "url": "second link"
           }]
-        IMAGE
+          IMAGE
       end
 
       let(json) { super.gsub(/"image": {[^}]+}/, image) }

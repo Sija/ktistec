@@ -120,7 +120,7 @@ class Session
       DELETE FROM sessions
        WHERE (account_id IS NULL AND updated_at < datetime('now', '-1 hour'))
           OR (updated_at < datetime('now', '-1 month'))
-    QUERY
+      QUERY
     exec(delete)
   end
 end

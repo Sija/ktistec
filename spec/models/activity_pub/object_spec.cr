@@ -341,7 +341,7 @@ Spectator.describe ActivityPub::Object do
             "type":"Collection"
           }
         }
-      JSON
+        JSON
     end
 
     it "gets the ids" do
@@ -459,7 +459,7 @@ Spectator.describe ActivityPub::Object do
         ],
         "url":"url-link"
       }
-    JSON
+      JSON
   end
 
   # matcher
@@ -690,7 +690,7 @@ Spectator.describe ActivityPub::Object do
               "name": "English"
             }
           }
-        JSON
+          JSON
       end
 
       it "sets the language" do
@@ -709,7 +709,7 @@ Spectator.describe ActivityPub::Object do
             "@id":"https://remote/foo_bar",
             "@type":"FooBarObject"
           }
-        JSON
+          JSON
       end
 
       it "defaults sensitive to false" do
@@ -933,7 +933,7 @@ Spectator.describe ActivityPub::Object do
               "name": "English"
             }
           }
-        JSON
+          JSON
       end
 
       it "sets the language" do
@@ -952,7 +952,7 @@ Spectator.describe ActivityPub::Object do
             "@id":"https://remote/foo_bar",
             "@type":"FooBarObject"
           }
-        JSON
+          JSON
       end
 
       it "defaults sensitive to false" do
@@ -2449,7 +2449,7 @@ Spectator.describe ActivityPub::Object::ModelHelper do
           "@type":"Collection"
         }
       }
-    JSON
+      JSON
   end
 
   describe ".from_json_ld" do

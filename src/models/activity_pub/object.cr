@@ -440,7 +440,7 @@ module ActivityPub
              AND o.published IS NOT NULL
         ORDER BY o.id DESC
            LIMIT ? OFFSET ?
-      QUERY
+        QUERY
       Object.query_and_paginate(query, page: page, size: size)
     end
 
@@ -451,15 +451,15 @@ module ActivityPub
     #
     def self.federated_posts(*, max_id = nil, min_id = nil, limit = 10)
       query = <<-QUERY
-          SELECT #{Object.columns(prefix: "o")}
-            FROM objects AS o
-            JOIN actors AS t
-              ON t.iri = o.attributed_to_iri
-           WHERE o.visible = 1
-             #{common_filters(objects: "o", actors: "t")}
-             AND o.published IS NOT NULL
-             AND %{cursor_condition}
-      QUERY
+        SELECT #{Object.columns(prefix: "o")}
+          FROM objects AS o
+          JOIN actors AS t
+            ON t.iri = o.attributed_to_iri
+         WHERE o.visible = 1
+           #{common_filters(objects: "o", actors: "t")}
+           AND o.published IS NOT NULL
+           AND %{cursor_condition}
+        QUERY
       Object.query_with_cursor(query, cursor_column: "o.id", max_id: max_id, min_id: min_id, limit: limit)
     end
 
@@ -470,14 +470,14 @@ module ActivityPub
     #
     def self.federated_posts_count
       query = <<-QUERY
-          SELECT COUNT(o.id)
-            FROM objects AS o
-            JOIN actors AS t
-              ON t.iri = o.attributed_to_iri
-           WHERE o.visible = 1
-             #{common_filters(objects: "o", actors: "t")}
-             AND o.published IS NOT NULL
-      QUERY
+        SELECT COUNT(o.id)
+          FROM objects AS o
+          JOIN actors AS t
+            ON t.iri = o.attributed_to_iri
+         WHERE o.visible = 1
+           #{common_filters(objects: "o", actors: "t")}
+           AND o.published IS NOT NULL
+        QUERY
       Object.scalar(query).as(Int64)
     end
 
@@ -487,24 +487,24 @@ module ActivityPub
     #
     def self.public_posts(page = 1, size = 10)
       query = <<-QUERY
-          SELECT DISTINCT #{Object.columns(prefix: "o")}
-            FROM accounts AS c
-            JOIN relationships AS r
-              ON likelihood(r.from_iri = c.iri, 0.99)
-             AND r.type = '#{Relationship::Content::Outbox}'
-            JOIN activities AS a
-              ON a.iri = r.to_iri
-             AND a.type IN ('#{ActivityPub::Activity::Announce}', '#{ActivityPub::Activity::Create}')
-            JOIN objects AS o
-              ON o.iri = a.object_iri
-            JOIN actors AS t
-              ON t.iri = o.attributed_to_iri
-           WHERE o.visible = 1
-             AND likelihood(o.in_reply_to_iri IS NULL, 0.25)
-             #{common_filters(objects: "o", actors: "t", activities: "a")}
-          ORDER BY r.id DESC
-             LIMIT ? OFFSET ?
-      QUERY
+        SELECT DISTINCT #{Object.columns(prefix: "o")}
+          FROM accounts AS c
+          JOIN relationships AS r
+            ON likelihood(r.from_iri = c.iri, 0.99)
+           AND r.type = '#{Relationship::Content::Outbox}'
+          JOIN activities AS a
+            ON a.iri = r.to_iri
+           AND a.type IN ('#{ActivityPub::Activity::Announce}', '#{ActivityPub::Activity::Create}')
+          JOIN objects AS o
+            ON o.iri = a.object_iri
+          JOIN actors AS t
+            ON t.iri = o.attributed_to_iri
+         WHERE o.visible = 1
+           AND likelihood(o.in_reply_to_iri IS NULL, 0.25)
+           #{common_filters(objects: "o", actors: "t", activities: "a")}
+        ORDER BY r.id DESC
+           LIMIT ? OFFSET ?
+        QUERY
       Object.query_and_paginate(query, page: page, size: size)
     end
 
@@ -514,22 +514,22 @@ module ActivityPub
     #
     def self.public_posts_count
       query = <<-QUERY
-          SELECT COUNT(DISTINCT o.id)
-            FROM accounts AS c
-            JOIN relationships AS r
-              ON likelihood(r.from_iri = c.iri, 0.99)
-             AND r.type = '#{Relationship::Content::Outbox}'
-            JOIN activities AS a
-              ON a.iri = r.to_iri
-             AND a.type IN ('#{ActivityPub::Activity::Announce}', '#{ActivityPub::Activity::Create}')
-            JOIN objects AS o
-              ON o.iri = a.object_iri
-            JOIN actors AS t
-              ON t.iri = o.attributed_to_iri
-           WHERE o.visible = 1
-             AND likelihood(o.in_reply_to_iri IS NULL, 0.25)
-             #{common_filters(objects: "o", actors: "t", activities: "a")}
-      QUERY
+        SELECT COUNT(DISTINCT o.id)
+          FROM accounts AS c
+          JOIN relationships AS r
+            ON likelihood(r.from_iri = c.iri, 0.99)
+           AND r.type = '#{Relationship::Content::Outbox}'
+          JOIN activities AS a
+            ON a.iri = r.to_iri
+           AND a.type IN ('#{ActivityPub::Activity::Announce}', '#{ActivityPub::Activity::Create}')
+          JOIN objects AS o
+            ON o.iri = a.object_iri
+          JOIN actors AS t
+            ON t.iri = o.attributed_to_iri
+         WHERE o.visible = 1
+           AND likelihood(o.in_reply_to_iri IS NULL, 0.25)
+           #{common_filters(objects: "o", actors: "t", activities: "a")}
+        QUERY
       Object.scalar(query).as(Int64)
     end
 
@@ -554,7 +554,7 @@ module ActivityPub
              #{common_filters(activities: "a")}
         ORDER BY a.id DESC
            LIMIT 1
-      QUERY
+        QUERY
       Object.scalar(query).as(Int64)
     rescue DB::NoResultsError
       -1_i64
@@ -571,11 +571,11 @@ module ActivityPub
 
     def with_statistics!
       query = <<-QUERY
-         SELECT sum(a.type = 'ActivityPub::Activity::Announce') AS announces, sum(a.type = 'ActivityPub::Activity::Like') AS likes, sum(a.type = 'ActivityPub::Activity::Dislike') AS dislikes
-           FROM activities AS a
-          WHERE a.undone_at IS NULL
-            AND a.object_iri = ?
-      QUERY
+        SELECT sum(a.type = 'ActivityPub::Activity::Announce') AS announces, sum(a.type = 'ActivityPub::Activity::Like') AS likes, sum(a.type = 'ActivityPub::Activity::Dislike') AS dislikes
+          FROM activities AS a
+         WHERE a.undone_at IS NULL
+           AND a.object_iri = ?
+        QUERY
       Internal.log_query(query) do
         Ktistec.database.query_one(query, iri) do |rs|
           rs.read(Int64?).try { |announces_count| self.announces_count = announces_count }
@@ -591,43 +591,43 @@ module ActivityPub
 
     private def with_replies_count_query_with_recursive
       <<-QUERY
-      WITH RECURSIVE
-       replies_to(iri) AS (
-         VALUES(?)
-            UNION
-           SELECT o.iri
-             FROM objects AS o, replies_to AS t
-             JOIN actors AS a
-               ON a.iri = o.attributed_to_iri
-            WHERE o.in_reply_to_iri = t.iri
-              #{common_filters(objects: "o", actors: "a")}
-        )
-      QUERY
+        WITH RECURSIVE
+         replies_to(iri) AS (
+           VALUES(?)
+              UNION
+             SELECT o.iri
+               FROM objects AS o, replies_to AS t
+               JOIN actors AS a
+                 ON a.iri = o.attributed_to_iri
+              WHERE o.in_reply_to_iri = t.iri
+                #{common_filters(objects: "o", actors: "a")}
+          )
+        QUERY
     end
 
     def with_replies_count!
       query = <<-QUERY
-      #{with_replies_count_query_with_recursive}
-      SELECT count(o.iri) - 1
-        FROM objects AS o, replies_to AS r
-       WHERE o.iri IN (r.iri)
-      QUERY
+        #{with_replies_count_query_with_recursive}
+        SELECT count(o.iri) - 1
+          FROM objects AS o, replies_to AS r
+         WHERE o.iri IN (r.iri)
+        QUERY
       Object.scalar(query, iri).as(Int64?).try { |replies_count| self.replies_count = replies_count }
       self
     end
 
     def with_replies_count!(approved_by)
       query = <<-QUERY
-      #{with_replies_count_query_with_recursive}
-         SELECT count(o.iri) - 1
-           FROM objects AS o, replies_to AS t
-      LEFT JOIN relationships AS r
-             ON r.type = '#{Relationship::Content::Approved}'
-             AND r.from_iri = ? AND r.to_iri = o.iri
-          WHERE o.iri IN (t.iri)
-            AND o.visible = 1
-            AND ((o.in_reply_to_iri IS NULL) OR (r.id IS NOT NULL))
-      QUERY
+        #{with_replies_count_query_with_recursive}
+           SELECT count(o.iri) - 1
+             FROM objects AS o, replies_to AS t
+        LEFT JOIN relationships AS r
+               ON r.type = '#{Relationship::Content::Approved}'
+               AND r.from_iri = ? AND r.to_iri = o.iri
+            WHERE o.iri IN (t.iri)
+              AND o.visible = 1
+              AND ((o.in_reply_to_iri IS NULL) OR (r.id IS NOT NULL))
+        QUERY
       from_iri = approved_by.responds_to?(:iri) ? approved_by.iri : approved_by.to_s
       Object.scalar(query, iri, from_iri).as(Int64?).try { |replies_count| self.replies_count = replies_count }
       self
@@ -644,14 +644,14 @@ module ActivityPub
     #
     def replies(*, for_actor)
       query = <<-QUERY
-         SELECT #{Object.columns(prefix: "o")}
-           FROM objects AS o
-           JOIN actors AS a
-             ON a.iri = o.attributed_to_iri
-          WHERE o.in_reply_to_iri = ?
-            #{common_filters(objects: "o", actors: "a")}
-       ORDER BY o.published DESC
-      QUERY
+          SELECT #{Object.columns(prefix: "o")}
+            FROM objects AS o
+            JOIN actors AS a
+              ON a.iri = o.attributed_to_iri
+           WHERE o.in_reply_to_iri = ?
+             #{common_filters(objects: "o", actors: "a")}
+        ORDER BY o.published DESC
+        QUERY
       Object.query_all(query, iri)
     end
 
@@ -663,18 +663,18 @@ module ActivityPub
     #
     def replies(*, approved_by)
       query = <<-QUERY
-         SELECT #{Object.columns(prefix: "o")}
-           FROM objects AS o
-           JOIN actors AS a
-             ON a.iri = o.attributed_to_iri
-           JOIN relationships AS r
-             ON r.type = '#{Relationship::Content::Approved}'
-            AND r.from_iri = ? AND r.to_iri = o.iri
-          WHERE o.in_reply_to_iri = ?
-            AND o.visible = 1
-            #{common_filters(objects: "o", actors: "a")}
-       ORDER BY o.published DESC
-      QUERY
+          SELECT #{Object.columns(prefix: "o")}
+            FROM objects AS o
+            JOIN actors AS a
+              ON a.iri = o.attributed_to_iri
+            JOIN relationships AS r
+              ON r.type = '#{Relationship::Content::Approved}'
+             AND r.from_iri = ? AND r.to_iri = o.iri
+           WHERE o.in_reply_to_iri = ?
+             AND o.visible = 1
+             #{common_filters(objects: "o", actors: "a")}
+        ORDER BY o.published DESC
+        QUERY
       from_iri = approved_by.responds_to?(:iri) ? approved_by.iri : approved_by.to_s
       Object.query_all(query, from_iri, iri)
     end
@@ -712,29 +712,29 @@ module ActivityPub
     #
     private def thread_query_with_recursive
       <<-QUERY
-      WITH RECURSIVE
-       ancestors_of(iri, depth) AS (
-           VALUES(?, 0)
-            UNION
-           SELECT o.in_reply_to_iri AS iri, p.depth + 1 AS depth
-             FROM objects AS o, ancestors_of AS p
-             JOIN actors AS a
-               ON a.iri = o.attributed_to_iri
-            WHERE o.iri = p.iri
-              AND o.in_reply_to_iri IS NOT NULL
-       ),
-       replies_to(iri, position, depth) AS (
-           SELECT * FROM (SELECT iri, '', 0 FROM ancestors_of ORDER BY depth DESC LIMIT 1)
-            UNION
-           SELECT o.iri, printf('%s.%020d', r.position, CASE WHEN p.iri IS NOT NULL AND o.attributed_to_iri = p.attributed_to_iri THEN -o.id ELSE o.id END), r.depth + 1 AS depth
-             FROM objects AS o, replies_to AS r
-        LEFT JOIN objects AS p
-               ON p.iri = r.iri
-             JOIN actors AS a
-               ON a.iri = o.attributed_to_iri
-            WHERE o.in_reply_to_iri = r.iri
-        )
-      QUERY
+        WITH RECURSIVE
+         ancestors_of(iri, depth) AS (
+             VALUES(?, 0)
+              UNION
+             SELECT o.in_reply_to_iri AS iri, p.depth + 1 AS depth
+               FROM objects AS o, ancestors_of AS p
+               JOIN actors AS a
+                 ON a.iri = o.attributed_to_iri
+              WHERE o.iri = p.iri
+                AND o.in_reply_to_iri IS NOT NULL
+         ),
+         replies_to(iri, position, depth) AS (
+             SELECT * FROM (SELECT iri, '', 0 FROM ancestors_of ORDER BY depth DESC LIMIT 1)
+              UNION
+             SELECT o.iri, printf('%s.%020d', r.position, CASE WHEN p.iri IS NOT NULL AND o.attributed_to_iri = p.attributed_to_iri THEN -o.id ELSE o.id END), r.depth + 1 AS depth
+               FROM objects AS o, replies_to AS r
+          LEFT JOIN objects AS p
+                 ON p.iri = r.iri
+               JOIN actors AS a
+                 ON a.iri = o.attributed_to_iri
+              WHERE o.in_reply_to_iri = r.iri
+          )
+        QUERY
     end
 
     # Returns all objects in the thread to which this object belongs.
@@ -754,13 +754,13 @@ module ActivityPub
     #
     def thread(*, for_actor)
       query = <<-QUERY
-         #{thread_query_with_recursive}
-         SELECT #{Object.columns(prefix: "o")}, r.depth
-           FROM objects AS o, replies_to AS r
-          WHERE o.iri IN (r.iri)
-            AND o.special IS NULL
-          ORDER BY r.position
-      QUERY
+        #{thread_query_with_recursive}
+        SELECT #{Object.columns(prefix: "o")}, r.depth
+          FROM objects AS o, replies_to AS r
+         WHERE o.iri IN (r.iri)
+           AND o.special IS NULL
+         ORDER BY r.position
+        QUERY
       Object.query_all(query, iri, additional_columns: {depth: Int32})
     end
 
@@ -779,18 +779,18 @@ module ActivityPub
     #
     def thread(*, approved_by)
       query = <<-QUERY
-         #{thread_query_with_recursive}
-         SELECT #{Object.columns(prefix: "o")}, t.depth
-           FROM objects AS o, replies_to AS t
-      LEFT JOIN relationships AS r
-             ON r.type = '#{Relationship::Content::Approved}'
-            AND r.from_iri = ? AND r.to_iri = o.iri
-          WHERE o.iri IN (t.iri)
-            AND o.visible = 1
-            AND o.special IS NULL
-            AND ((o.in_reply_to_iri IS NULL) OR (r.id IS NOT NULL))
-          ORDER BY t.position
-      QUERY
+           #{thread_query_with_recursive}
+           SELECT #{Object.columns(prefix: "o")}, t.depth
+             FROM objects AS o, replies_to AS t
+        LEFT JOIN relationships AS r
+               ON r.type = '#{Relationship::Content::Approved}'
+              AND r.from_iri = ? AND r.to_iri = o.iri
+            WHERE o.iri IN (t.iri)
+              AND o.visible = 1
+              AND o.special IS NULL
+              AND ((o.in_reply_to_iri IS NULL) OR (r.id IS NOT NULL))
+            ORDER BY t.position
+        QUERY
       from_iri = approved_by.responds_to?(:iri) ? approved_by.iri : approved_by.to_s
       Object.query_all(query, iri, from_iri, additional_columns: {depth: Int32})
     end
@@ -922,60 +922,60 @@ module ActivityPub
 
     private def ancestors_with_recursive
       <<-QUERY
-      WITH RECURSIVE
-       ancestors_of(iri, depth) AS (
-          VALUES(?, 0)
-           UNION
-          SELECT o.in_reply_to_iri AS iri, p.depth + 1 AS depth
-            FROM objects AS o, ancestors_of AS p
-            JOIN actors AS a
-              ON a.iri = o.attributed_to_iri
-           WHERE o.iri = p.iri AND o.in_reply_to_iri IS NOT NULL
-             #{common_filters(objects: "o", actors: "a")}
-      )
-      QUERY
+        WITH RECURSIVE
+         ancestors_of(iri, depth) AS (
+            VALUES(?, 0)
+             UNION
+            SELECT o.in_reply_to_iri AS iri, p.depth + 1 AS depth
+              FROM objects AS o, ancestors_of AS p
+              JOIN actors AS a
+                ON a.iri = o.attributed_to_iri
+             WHERE o.iri = p.iri AND o.in_reply_to_iri IS NOT NULL
+               #{common_filters(objects: "o", actors: "a")}
+        )
+        QUERY
     end
 
     def ancestors
       query = <<-QUERY
-      #{ancestors_with_recursive}
-      SELECT #{Object.columns(prefix: "o")}, p.depth
-        FROM objects AS o, ancestors_of AS p
-        JOIN actors AS a
-          ON a.iri = o.attributed_to_iri
-       WHERE o.iri IN (p.iri)
-         #{common_filters(objects: "o", actors: "a")}
-       ORDER BY p.depth
-      QUERY
+        #{ancestors_with_recursive}
+        SELECT #{Object.columns(prefix: "o")}, p.depth
+          FROM objects AS o, ancestors_of AS p
+          JOIN actors AS a
+            ON a.iri = o.attributed_to_iri
+         WHERE o.iri IN (p.iri)
+           #{common_filters(objects: "o", actors: "a")}
+         ORDER BY p.depth
+        QUERY
       Object.query_all(query, iri, additional_columns: {depth: Int32})
     end
 
     private def descendants_with_recursive
       <<-QUERY
-      WITH RECURSIVE
-       replies_to(iri, position, depth) AS (
-          VALUES(?, '', 0)
-           UNION
-          SELECT o.iri, printf('%s.%020d', r.position, CASE WHEN p.iri IS NOT NULL AND o.attributed_to_iri = p.attributed_to_iri THEN -o.id ELSE o.id END), r.depth + 1 AS depth
-            FROM objects AS o, replies_to AS r
-       LEFT JOIN objects AS p
-              ON p.iri = r.iri
-            JOIN actors AS a
-              ON a.iri = o.attributed_to_iri
-           WHERE o.in_reply_to_iri = r.iri
-             #{common_filters(objects: "o", actors: "a")}
-      )
-      QUERY
+        WITH RECURSIVE
+         replies_to(iri, position, depth) AS (
+            VALUES(?, '', 0)
+             UNION
+            SELECT o.iri, printf('%s.%020d', r.position, CASE WHEN p.iri IS NOT NULL AND o.attributed_to_iri = p.attributed_to_iri THEN -o.id ELSE o.id END), r.depth + 1 AS depth
+              FROM objects AS o, replies_to AS r
+         LEFT JOIN objects AS p
+                ON p.iri = r.iri
+              JOIN actors AS a
+                ON a.iri = o.attributed_to_iri
+             WHERE o.in_reply_to_iri = r.iri
+               #{common_filters(objects: "o", actors: "a")}
+        )
+        QUERY
     end
 
     def descendants
       query = <<-QUERY
-      #{descendants_with_recursive}
-      SELECT #{Object.columns(prefix: "o")}, r.depth
-        FROM objects AS o, replies_to AS r
-       WHERE o.iri IN (r.iri)
-       ORDER BY r.position
-      QUERY
+        #{descendants_with_recursive}
+        SELECT #{Object.columns(prefix: "o")}, r.depth
+          FROM objects AS o, replies_to AS r
+         WHERE o.iri IN (r.iri)
+         ORDER BY r.position
+        QUERY
       Object.query_all(query, iri, additional_columns: {depth: Int32})
     end
 
@@ -992,26 +992,26 @@ module ActivityPub
     #
     def self_replies
       query = <<-QUERY
-      WITH RECURSIVE
-       self_replies_to(iri, position) AS (
-          VALUES(?, '')
-           UNION
-          SELECT o.iri, printf('%s.%020d', r.position, o.id)
-            FROM objects AS o, self_replies_to AS r
-            JOIN actors AS a
-              ON a.iri = o.attributed_to_iri
-           WHERE o.in_reply_to_iri = r.iri
-             AND o.attributed_to_iri = ?
-             #{common_filters(objects: "o", actors: "a")}
-      )
-      SELECT #{Object.columns(prefix: "o")}
-        FROM objects AS o, self_replies_to AS r
-        JOIN actors AS a
-          ON a.iri = o.attributed_to_iri
-       WHERE o.iri IN (r.iri)
-         #{common_filters(objects: "o", actors: "a")}
-       ORDER BY r.position ASC
-      QUERY
+        WITH RECURSIVE
+         self_replies_to(iri, position) AS (
+            VALUES(?, '')
+             UNION
+            SELECT o.iri, printf('%s.%020d', r.position, o.id)
+              FROM objects AS o, self_replies_to AS r
+              JOIN actors AS a
+                ON a.iri = o.attributed_to_iri
+             WHERE o.in_reply_to_iri = r.iri
+               AND o.attributed_to_iri = ?
+               #{common_filters(objects: "o", actors: "a")}
+        )
+        SELECT #{Object.columns(prefix: "o")}
+          FROM objects AS o, self_replies_to AS r
+          JOIN actors AS a
+            ON a.iri = o.attributed_to_iri
+         WHERE o.iri IN (r.iri)
+           #{common_filters(objects: "o", actors: "a")}
+         ORDER BY r.position ASC
+        QUERY
       Object.query_all(query, iri, attributed_to_iri)
     end
 
@@ -1031,16 +1031,16 @@ module ActivityPub
           %Q|AND a.type NOT IN ('#{exclusion.map(&.to_s).join("','")}')|
         end
       query = <<-QUERY
-         SELECT #{Activity.columns(prefix: "a")}
-           FROM activities AS a
-           JOIN actors AS t
-             ON t.iri = a.actor_iri
-          WHERE a.object_iri = ?
-            #{common_filters(actors: "t", activities: "a")}
-            #{inclusion}
-            #{exclusion}
-       ORDER BY a.id ASC
-      QUERY
+          SELECT #{Activity.columns(prefix: "a")}
+            FROM activities AS a
+            JOIN actors AS t
+              ON t.iri = a.actor_iri
+           WHERE a.object_iri = ?
+             #{common_filters(actors: "t", activities: "a")}
+             #{inclusion}
+             #{exclusion}
+        ORDER BY a.id ASC
+        QUERY
       Activity.query_all(query, iri)
     end
 

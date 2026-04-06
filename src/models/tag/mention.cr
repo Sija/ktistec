@@ -39,19 +39,19 @@ class Tag
     #
     def self.most_recent_object(name)
       query = <<-QUERY
-        SELECT #{ActivityPub::Object.columns(prefix: "o")}
-          FROM objects AS o
-          JOIN tags AS t
-            ON t.subject_iri = o.iri
-           AND t.type = '#{self}'
-          JOIN actors AS a
-            ON a.iri = o.attributed_to_iri
-         WHERE t.name = ?
-           AND o.published IS NOT NULL
-           #{common_filters(objects: "o", actors: "a")}
-      ORDER BY t.id DESC
-         LIMIT 1
-      QUERY
+          SELECT #{ActivityPub::Object.columns(prefix: "o")}
+            FROM objects AS o
+            JOIN tags AS t
+              ON t.subject_iri = o.iri
+             AND t.type = '#{self}'
+            JOIN actors AS a
+              ON a.iri = o.attributed_to_iri
+           WHERE t.name = ?
+             AND o.published IS NOT NULL
+             #{common_filters(objects: "o", actors: "a")}
+        ORDER BY t.id DESC
+           LIMIT 1
+        QUERY
       ActivityPub::Object.query_all(query, name).first?
     end
 
@@ -63,19 +63,19 @@ class Tag
     #
     def self.all_objects(name, page = 1, size = 10)
       query = <<-QUERY
-        SELECT #{ActivityPub::Object.columns(prefix: "o")}
-          FROM objects AS o
-          JOIN tags AS t
-            ON t.subject_iri = o.iri
-           AND t.type = '#{self}'
-          JOIN actors AS a
-            ON a.iri = o.attributed_to_iri
-         WHERE t.name = ?
-           AND o.published IS NOT NULL
-           #{common_filters(objects: "o", actors: "a")}
-      ORDER BY t.id DESC
-         LIMIT ? OFFSET ?
-      QUERY
+          SELECT #{ActivityPub::Object.columns(prefix: "o")}
+            FROM objects AS o
+            JOIN tags AS t
+              ON t.subject_iri = o.iri
+             AND t.type = '#{self}'
+            JOIN actors AS a
+              ON a.iri = o.attributed_to_iri
+           WHERE t.name = ?
+             AND o.published IS NOT NULL
+             #{common_filters(objects: "o", actors: "a")}
+        ORDER BY t.id DESC
+           LIMIT ? OFFSET ?
+        QUERY
       ActivityPub::Object.query_and_paginate(query, name, page: page, size: size)
     end
 
@@ -100,7 +100,7 @@ class Tag
            AND o.published IS NOT NULL
            #{common_filters(objects: "o", actors: "a")}
            AND t.created_at > ?
-      QUERY
+        QUERY
       ActivityPub::Object.scalar(query, name, since).as(Int64)
     end
 
@@ -115,7 +115,7 @@ class Tag
           FROM tag_statistics
          WHERE type = ?
            AND name = ?
-      QUERY
+        QUERY
       ActivityPub::Object.scalar(query, short_type, name).as(Int64)
     end
   end
