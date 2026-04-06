@@ -29,7 +29,7 @@ module MCP
       matches: Regex?,
       minimum: Int32?,
       maximum: Int32?,
-      default: String | Int32 | Bool | Time | Array(String) | Array(Int32) | Array(Bool) | Nil,
+      default: String | Int32 | Bool | Time | Array(String) | Array(Int32) | Array(Bool)?,
       enum: Array(String)?, # enum values for string types
       # array-specific properties
       items: String?, # type of array items ("string", "integer")

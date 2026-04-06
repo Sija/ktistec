@@ -14,7 +14,7 @@ module Ktistec
 
     # Pairs composed of SQL conditions and values.
     #
-    alias ConditionPair = Tuple(String, SupportedType | Array(SupportedType) | Nil)
+    alias ConditionPair = Tuple(String, SupportedType | Array(SupportedType)?)
 
     # Returns a SQL condition and values given an expression. The
     # supplied function must return an appropriate supported type (or

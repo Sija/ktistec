@@ -324,7 +324,7 @@ class StreamingController
     end
   {% end %}
 
-  def self.stream_action(io : IO, body : String?, action : String, target : String?, selector : String?, id : String | Bool | Nil = false)
+  def self.stream_action(io : IO, body : String?, action : String, target : String?, selector : String?, id : String | Bool? = false)
     String.build do |str|
       if target && !selector
         str << %Q|<turbo-stream action="#{action}" target="#{target}">|
