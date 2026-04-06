@@ -64,7 +64,7 @@ Spectator.describe ModelChannel do
       before_each do
         spawn do
           subject.subscribe(model) { model.invocations += 1; model.save }
-        rescue ex
+        rescue
         end
         Fiber.yield
       end
@@ -81,7 +81,7 @@ Spectator.describe ModelChannel do
       before_each do
         spawn do
           subject.subscribe(TestModel.new.save) { model.invocations += 1; model.save }
-        rescue ex
+        rescue
         end
         Fiber.yield
       end
@@ -98,7 +98,7 @@ Spectator.describe ModelChannel do
       before_each do
         spawn do
           subject.subscribe(model) { raise "error" }
-        rescue ex
+        rescue
         end
         Fiber.yield
       end
@@ -115,7 +115,7 @@ Spectator.describe ModelChannel do
       before_each do
         spawn do
           subject.subscribe(model) { model.invocations += 1; model.save }
-        rescue ex
+        rescue
         end
         Fiber.yield
       end
