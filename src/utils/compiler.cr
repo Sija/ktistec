@@ -64,7 +64,7 @@ module Ktistec
 
       # :inherit:
       def ==(other : self)
-        self.target == other.target
+        target == other.target
       end
     end
 
@@ -77,7 +77,7 @@ module Ktistec
 
       # :inherit:
       def ==(other : self)
-        self.target == other.target
+        target == other.target
       end
     end
 

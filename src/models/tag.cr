@@ -23,7 +23,7 @@ class Tag
   end
 
   def self.short_type
-    self.to_s.split("::").last.underscore
+    to_s.split("::").last.underscore
   end
 
   def short_type

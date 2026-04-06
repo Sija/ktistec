@@ -13,18 +13,18 @@ class HTTP::Server::Context
   #
   def accepts?(*mime_types)
     @accepts ||=
-      if (accept = self.request.headers["Accept"]?)
+      if (accept = request.headers["Accept"]?)
         accept.split(",").reduce(Hash(String, String).new) do |accepts, content_type|
           accepts.merge({content_type.split(";").first.strip => content_type})
         end
-      elsif (content_type = self.request.headers["Content-Type"]?)
+      elsif (content_type = request.headers["Content-Type"]?)
         {content_type.split(";").first.strip => content_type}
       else
         {} of String => String
       end
     if (accepts = @accepts)
       if (accept = accepts.find(&.first.in?(mime_types)))
-        self.response.content_type = accept.last
+        response.content_type = accept.last
       end
     end
   end

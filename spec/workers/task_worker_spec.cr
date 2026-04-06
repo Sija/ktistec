@@ -28,7 +28,7 @@ class FooBarTask < Task
   class_property performed = [] of Int64
 
   def perform
-    FooBarTask.performed << self.id.not_nil!
+    FooBarTask.performed << id.not_nil!
   end
 end
 

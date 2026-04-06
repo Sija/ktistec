@@ -244,12 +244,12 @@ module ActivityPub
     def before_validate
       if local?
         # remove old mentions from both to and cc
-        mention_hrefs = self.mentions.compact_map(&.href)
+        mention_hrefs = mentions.compact_map(&.href)
         if !mention_hrefs.empty?
           if (old_to = self.to)
             self.to = old_to - mention_hrefs
           end
-          if (old_cc = self.cc)
+          if (old_cc = cc)
             self.cc = old_cc - mention_hrefs
           end
         end
@@ -268,7 +268,7 @@ module ActivityPub
               self.content = enhancements.content
               if (quote_iri = self.quote_iri)
                 wrapped_quote_iri = Ktistec::Util.wrap_link(quote_iri) || ::HTML.escape(quote_iri)
-                self.content = "<p class=\"quote-inline\">RE: #{wrapped_quote_iri}</p>#{self.content}"
+                self.content = "<p class=\"quote-inline\">RE: #{wrapped_quote_iri}</p>#{content}"
               end
               self.media_type = media_type
               self.attachments = enhancements.attachments
@@ -278,12 +278,12 @@ module ActivityPub
           end
         end
         # add new mentions based on addressing
-        mention_hrefs = self.mentions.compact_map(&.href)
+        mention_hrefs = mentions.compact_map(&.href)
         if !mention_hrefs.empty?
           is_public = (to = self.to) && to.includes?("https://www.w3.org/ns/activitystreams#Public")
           is_private = to && to.includes?(attributed_to.try(&.followers))
           if is_public || is_private
-            if (old_cc = self.cc)
+            if (old_cc = cc)
               self.cc = old_cc | mention_hrefs
             else
               self.cc = mention_hrefs
@@ -1103,18 +1103,18 @@ module ActivityPub
 
     private def update_thread
       new_thread =
-        if self.in_reply_to_iri
-          if self.in_reply_to? && self.in_reply_to.thread
-            self.in_reply_to.thread
-          elsif self.in_reply_to? && self.in_reply_to.in_reply_to_iri
-            self.in_reply_to.in_reply_to_iri
+        if in_reply_to_iri
+          if in_reply_to? && in_reply_to.thread
+            in_reply_to.thread
+          elsif in_reply_to? && in_reply_to.in_reply_to_iri
+            in_reply_to.in_reply_to_iri
           else
-            self.in_reply_to_iri
+            in_reply_to_iri
           end
         else
-          self.iri
+          iri
         end
-      if self.thread != new_thread
+      if thread != new_thread
         self.thread = new_thread
       end
     end
@@ -1128,7 +1128,7 @@ module ActivityPub
     def after_save
       # update thread in replies
       self.class.where(in_reply_to: self).each do |reply|
-        if reply.thread != self.thread
+        if reply.thread != thread
           reply.save
         end
       end
@@ -1138,7 +1138,7 @@ module ActivityPub
     end
 
     def before_destroy
-      if local? && (attachments = self.attachments) && (actor = self.attributed_to?) && (actor_id = actor.id)
+      if local? && (attachments = self.attachments) && (actor = attributed_to?) && (actor_id = actor.id)
         attachments.each do |attachment|
           url = attachment.url
           next unless url.presence
@@ -1184,7 +1184,7 @@ module ActivityPub
     end
 
     def from_json_ld(json)
-      self.assign(self.class.map(json))
+      assign(self.class.map(json))
     end
 
     def self.map(json, **options)

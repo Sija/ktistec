@@ -14,7 +14,7 @@ module Ktistec
       end
 
       def as_a(as _as : T.class) : T forall T
-        T.find(self.id)
+        T.find(id)
       end
 
       @[Persistent]

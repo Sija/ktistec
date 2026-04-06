@@ -10,10 +10,10 @@ class Tag
     validates(name) { "is blank" if name.blank? }
 
     def before_save
-      self.name = self.name.lstrip("@")
+      self.name = name.lstrip("@")
       # The host part of a handle is not always present. If it is
       # missing, use the host part of the mention's `href` property.
-      unless self.name.includes?("@")
+      unless name.includes?("@")
         if (href = self.href) && (host = URI.parse(href).host)
           self.name += "@#{host}"
         end

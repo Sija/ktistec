@@ -25,7 +25,7 @@ Spectator.describe Ktistec::Model::Linked do
         json.object do
           json.field "@id", iri
           json.field "@type", "LinkedModel"
-          if (linked_model = self.linked_model?)
+          if (linked_model = linked_model?)
             json.field "https://www.w3.org/ns/activitystreams#linked" { json.raw linked_model.to_json_ld }
           elsif (linked_model_iri = self.linked_model_iri)
             json.field "https://www.w3.org/ns/activitystreams#linked", linked_model_iri

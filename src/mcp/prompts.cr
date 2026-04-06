@@ -135,7 +135,7 @@ module MCP
 
       # YAML prompts
       if (prompt = Prompt.find?(name))
-        return self.handle_prompt(prompt, params, account)
+        return handle_prompt(prompt, params, account)
       end
 
       Log.warn { "unknown prompt: #{name}" }

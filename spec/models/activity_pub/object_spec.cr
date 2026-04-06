@@ -466,8 +466,8 @@ Spectator.describe ActivityPub::Object do
   class ::Tag
     def ===(other : Tag)
       self.type == other.type &&
-        self.name == other.name &&
-        self.href == other.href
+        name == other.name &&
+        href == other.href
     end
   end
 

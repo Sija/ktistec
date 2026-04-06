@@ -42,21 +42,21 @@ end
 
 class HTTP::Request
   def ===(other : String)
-    other == "#{self.method} #{self.resource}"
+    other == "#{method} #{resource}"
   end
 
   def ===(other : Regex)
-    other =~ "#{self.method} #{self.resource}"
+    other =~ "#{method} #{resource}"
   end
 end
 
 class XML::Node
   def ==(other : String)
-    other == self.content
+    other == content
   end
 
   def ==(other : Regex)
-    !!(other =~ self.content)
+    !!(other =~ content)
   end
 end
 
@@ -113,7 +113,7 @@ end
 # testing, so use task worker `perform` to mimic its behavior.
 
 class TaskWorker
-  class_property instance : self { self.new }
+  class_property instance : self { new }
 
   def perform(task)
     previous_def(task)

@@ -17,14 +17,14 @@ class ActivityPub::Object
     def votes : Array(ActivityPub::Object::Note)
       ActivityPub::Object::Note.where(
         "in_reply_to_iri = ? AND special = 'vote'",
-        self.iri,
+        iri,
       )
     end
 
     def votes_by(actor : ActivityPub::Actor) : Array(ActivityPub::Object::Note)
       ActivityPub::Object::Note.where(
         "in_reply_to_iri = ? AND attributed_to_iri = ? AND special = 'vote'",
-        self.iri,
+        iri,
         actor.iri,
       )
     end

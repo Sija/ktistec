@@ -29,7 +29,7 @@ module Ktistec
         io << "#<"
         self.class.to_s(io)
         io << " iri="
-        self.iri.to_s(io)
+        iri.to_s(io)
         io << ">"
       end
 

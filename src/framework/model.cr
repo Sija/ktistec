@@ -98,7 +98,7 @@ module Ktistec
       # Returns the table name.
       #
       def table_name
-        @@table_name ||= Util.pluralize(self.to_s.gsub("::", "").underscore)
+        @@table_name ||= Util.pluralize(to_s.gsub("::", "").underscore)
       end
 
       # Returns true if no instances exist.
@@ -594,7 +594,7 @@ module Ktistec
         {% end %}
       {% end %}
       # dup but don't maintain a linked list of previously saved records
-      @saved_record = self.dup.clear_saved_record
+      @saved_record = dup.clear_saved_record
     end
 
     # Initializes a new instance.
@@ -643,7 +643,7 @@ module Ktistec
       {% end %}
       super()
       # dup but don't maintain a linked list of previously saved records
-      @saved_record = self.dup.clear_saved_record
+      @saved_record = dup.clear_saved_record
     end
 
     # :ditto:
@@ -682,7 +682,7 @@ module Ktistec
       {% end %}
       super()
       # dup but don't maintain a linked list of previously saved records
-      @saved_record = self.dup.clear_saved_record
+      @saved_record = dup.clear_saved_record
     end
 
     # Bulk assigns properties.
@@ -953,7 +953,7 @@ module Ktistec
     end
 
     def _serialize_graph(nodes, association = nil, index = nil, skip_associated = false)
-      return if self.destroyed?
+      return if destroyed?
       {% if @type < Deletable %}
         return if self.deleted?
       {% end %}
@@ -1174,7 +1174,7 @@ module Ktistec
         end
       {% end %}
       # dup but don't maintain a linked list of previously saved records
-      @saved_record = self.dup.clear_saved_record
+      @saved_record = dup.clear_saved_record
       clear_changed!
     end
 
@@ -1186,7 +1186,7 @@ module Ktistec
     #
     def update_property(property, value)
       raise NilAssertionError.new("#{self.class}: 'id' can't be `nil`") if @id.nil?
-      self.assign({property.to_s => value}, _strict: true)
+      assign({property.to_s => value}, _strict: true)
       self.class.exec("UPDATE #{table_name} SET #{property} = ? WHERE id = ?", value, @id)
     end
 
@@ -1195,9 +1195,9 @@ module Ktistec
     # Destroys the instance.
     #
     def destroy
-      self.before_destroy if self.responds_to?(:before_destroy)
+      self.before_destroy if self.responds_to?(:before_destroy) # ameba:disable Style/RedundantSelf
       self.class.exec("DELETE FROM #{table_name} WHERE id = ?", @id)
-      self.after_destroy if self.responds_to?(:after_destroy)
+      self.after_destroy if self.responds_to?(:after_destroy) # ameba:disable Style/RedundantSelf
       @destroyed = true
       @id = nil
       self
@@ -1258,7 +1258,7 @@ module Ktistec
       io << "#<"
       self.class.to_s(io)
       io << " id="
-      self.id.to_s(io)
+      id.to_s(io)
       io << ">"
     end
 
@@ -1266,7 +1266,7 @@ module Ktistec
       io << "#<"
       self.class.to_s(io)
       io << ":0x"
-      self.object_id.to_s(io, 16)
+      object_id.to_s(io, 16)
       {% begin %}
         {% vs = @type.instance_vars.select(&.annotation(Persistent)) %}
         {% for v in vs %}

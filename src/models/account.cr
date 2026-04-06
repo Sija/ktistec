@@ -67,7 +67,7 @@ class Account
 
   def password=(password)
     if (password && new_record?) || (password = password.presence)
-      @encrypted_password = Crypto::Bcrypt::Password.create(password, self.cost).to_s
+      @encrypted_password = Crypto::Bcrypt::Password.create(password, cost).to_s
       changed!(:encrypted_password)
       @password = password
     end
@@ -92,7 +92,7 @@ class Account
       messages = [] of String
       messages << "is too short" unless username.size >= 1
       messages << "contains invalid characters" unless username.each_char.all? { |char| char.ascii_alphanumeric? || char.in?('_', '.', '-', '~') }
-      messages << "must be unique" unless (accounts = Account.where(username: username)).empty? || accounts.all? { |account| account.id == self.id }
+      messages << "must be unique" unless (accounts = Account.where(username: username)).empty? || accounts.all? { |account| account.id == id }
       errors["username"] = messages unless messages.empty?
     end
     if (password = @password)
@@ -106,8 +106,8 @@ class Account
   def before_save
     if changed?(:actor)
       clear_changed!(:actor)
-      if (actor = self.actor?) && actor.pem_public_key.nil? && actor.pem_private_key.nil?
-        keypair = OpenSSL::RSA.generate(self.size, 17)
+      if (actor = actor?) && actor.pem_public_key.nil? && actor.pem_private_key.nil?
+        keypair = OpenSSL::RSA.generate(size, 17)
         actor.pem_public_key = keypair.public_key.to_pem
         actor.pem_private_key = keypair.to_pem
       end

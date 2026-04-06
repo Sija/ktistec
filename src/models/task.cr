@@ -14,7 +14,7 @@ class Task
     # Returns the name assigned to the associated fiber.
     #
     def fiber_name
-      "#{self.class}-#{self.id}"
+      "#{self.class}-#{id}"
     end
 
     # Returns the associated fiber.

@@ -209,7 +209,7 @@ module ActivityPub
     end
 
     def before_save
-      if local? && (saved = @saved_record) && (actor_id = self.id)
+      if local? && (saved = @saved_record) && (actor_id = id)
         if changed?(:icon) && (old_icon = saved.icon) && old_icon != icon
           if (path = URI.parse(old_icon).path)
             UploadService.delete(path, actor_id)
@@ -328,25 +328,25 @@ module ActivityPub
     def all_following(page = 1, size = 10, public = true)
       Actor.query_and_paginate(
         social_query(Relationship::Social::Follow, :to_iri, :from_iri, public),
-        self.iri, page: page, size: size)
+        iri, page: page, size: size)
     end
 
     def all_following(*, max_id = nil, min_id = nil, limit = 10, public = true)
       Actor.query_with_cursor(
         social_cursor_query(Relationship::Social::Follow, :to_iri, :from_iri, public),
-        self.iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
+        iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
     end
 
     def all_followers(page = 1, size = 10, public = false)
       Actor.query_and_paginate(
         social_query(Relationship::Social::Follow, :from_iri, :to_iri, public),
-        self.iri, page: page, size: size)
+        iri, page: page, size: size)
     end
 
     def all_followers(*, max_id = nil, min_id = nil, limit = 10, public = false)
       Actor.query_with_cursor(
         social_cursor_query(Relationship::Social::Follow, :from_iri, :to_iri, public),
-        self.iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
+        iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
     end
 
     def all_follow_requests(*, max_id = nil, min_id = nil, limit = 10)
@@ -361,7 +361,7 @@ module ActivityPub
            AND %{cursor_condition}
         QUERY
       Actor.query_with_cursor(
-        query, self.iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
+        query, iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
     end
 
     private def activity_query(type)
@@ -405,7 +405,7 @@ module ActivityPub
     def likes(page = 1, size = 10)
       Object.query_and_paginate(
         activity_query(ActivityPub::Activity::Like),
-        self.iri, page: page, size: size)
+        iri, page: page, size: size)
     end
 
     # Returns the count of objects that this actor has liked since the
@@ -430,7 +430,7 @@ module ActivityPub
     def dislikes(page = 1, size = 10)
       Object.query_and_paginate(
         activity_query(ActivityPub::Activity::Dislike),
-        self.iri, page: page, size: size)
+        iri, page: page, size: size)
     end
 
     # Returns the count of objects that this actor has disliked since the
@@ -455,7 +455,7 @@ module ActivityPub
     def announces(page = 1, size = 10)
       Object.query_and_paginate(
         activity_query(ActivityPub::Activity::Announce),
-        self.iri, page: page, size: size)
+        iri, page: page, size: size)
     end
 
     # Returns the count of objects that this actor has announced
@@ -490,7 +490,7 @@ module ActivityPub
         ORDER BY r.id DESC
            LIMIT ? OFFSET ?
         QUERY
-      Object.query_and_paginate(query, self.iri, page: page, size: size)
+      Object.query_and_paginate(query, iri, page: page, size: size)
     end
 
     # Returns the count of objects that this actor has bookmarked
@@ -534,7 +534,7 @@ module ActivityPub
         ORDER BY r.id DESC
            LIMIT ? OFFSET ?
         QUERY
-      Object.query_and_paginate(query, self.iri, page: page, size: size)
+      Object.query_and_paginate(query, iri, page: page, size: size)
     end
 
     # Returns the count of objects that this actor has pinned since the
@@ -555,7 +555,7 @@ module ActivityPub
            #{common_filters(objects: "o", actors: "c")}
            AND r.created_at > ?
         QUERY
-      Object.scalar(query, self.iri, since).as(Int64)
+      Object.scalar(query, iri, since).as(Int64)
     end
 
     # Returns the actor's draft posts.
@@ -677,11 +677,11 @@ module ActivityPub
            #{inclusion}
            #{exclusion}
         QUERY
-      Activity.scalar(query, self.iri, object.iri).as(Int64) > 0
+      Activity.scalar(query, iri, object.iri).as(Int64) > 0
     end
 
     def in_outbox(page = 1, size = 10, public = true)
-      self.class.content(self.iri, Relationship::Content::Outbox, nil, [ActivityPub::Activity::Delete, ActivityPub::Activity::Undo], page, size, public)
+      self.class.content(iri, Relationship::Content::Outbox, nil, [ActivityPub::Activity::Delete, ActivityPub::Activity::Undo], page, size, public)
     end
 
     def in_outbox?(object : Object, inclusion = nil, exclusion = nil)
@@ -689,7 +689,7 @@ module ActivityPub
     end
 
     def in_inbox(page = 1, size = 10, public = true)
-      self.class.content(self.iri, Relationship::Content::Inbox, nil, [ActivityPub::Activity::Delete, ActivityPub::Activity::Undo], page, size, public)
+      self.class.content(iri, Relationship::Content::Inbox, nil, [ActivityPub::Activity::Delete, ActivityPub::Activity::Undo], page, size, public)
     end
 
     def in_inbox?(object : Object, inclusion = nil, exclusion = nil)
@@ -724,7 +724,7 @@ module ActivityPub
            #{inclusion}
            #{exclusion}
         QUERY
-      Activity.query_all(query, self.iri, object.iri).first?
+      Activity.query_all(query, iri, object.iri).first?
     end
 
     def find_announce_for(object : Object)
@@ -758,7 +758,7 @@ module ActivityPub
          ORDER BY p.id DESC, o.published DESC
             LIMIT ? OFFSET ?
         QUERY
-      Object.query_and_paginate(query, self.iri, self.iri, page: page, size: size)
+      Object.query_and_paginate(query, iri, iri, page: page, size: size)
     end
 
     # Returns the actor's known posts.
@@ -781,7 +781,7 @@ module ActivityPub
            AND o.visible = 1
            AND %{cursor_condition}
         QUERY
-      Object.query_with_cursor(query, self.iri, cursor_column: "o.id", max_id: max_id, min_id: min_id, limit: limit)
+      Object.query_with_cursor(query, iri, cursor_column: "o.id", max_id: max_id, min_id: min_id, limit: limit)
     end
 
     # Returns the actor's public posts and shares.
@@ -809,7 +809,7 @@ module ActivityPub
         ORDER BY r.id DESC
            LIMIT ? OFFSET ?
         QUERY
-      Object.query_and_paginate(query, self.iri, page: page, size: size)
+      Object.query_and_paginate(query, iri, page: page, size: size)
     end
 
     # Returns the actor's public posts and shares.
@@ -836,7 +836,7 @@ module ActivityPub
            AND o.visible = 1
            AND %{cursor_condition}
         QUERY
-      Object.query_with_cursor(query, self.iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
+      Object.query_with_cursor(query, iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
     end
 
     # Returns the actor's public posts and shares.
@@ -856,7 +856,7 @@ module ActivityPub
              AND p.to_iri = o.iri
         ORDER BY p.id DESC
         QUERY
-      all_pinned = Object.query_all(all_pinned_query, self.iri)
+      all_pinned = Object.query_all(all_pinned_query, iri)
       pinned_to_skip = [base_offset, all_pinned.size].min
       pinned_available = all_pinned.size - pinned_to_skip
       pinned_to_take = [size, pinned_available].min
@@ -886,7 +886,7 @@ module ActivityPub
          ORDER BY r.id DESC
             LIMIT ? OFFSET ?
         QUERY
-      non_pinned = Object.query_all(non_pinned_query, self.iri, self.iri, non_pinned_needed, non_pinned_offset)
+      non_pinned = Object.query_all(non_pinned_query, iri, iri, non_pinned_needed, non_pinned_offset)
       Ktistec::Util::PaginatedArray(Object).new.tap do |array|
         (pinned + non_pinned).each { |obj| array << obj }
         if array.size > size
@@ -919,7 +919,7 @@ module ActivityPub
         ORDER BY r.id DESC
            LIMIT ? OFFSET ?
         QUERY
-      Object.query_and_paginate(query, self.iri, page: page, size: size)
+      Object.query_and_paginate(query, iri, page: page, size: size)
     end
 
     # Returns the actor's posts and shares.
@@ -944,7 +944,7 @@ module ActivityPub
            #{common_filters(objects: "o", actors: "t", activities: "a")}
            AND %{cursor_condition}
         QUERY
-      Object.query_with_cursor(query, self.iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
+      Object.query_with_cursor(query, iri, cursor_column: "r.id", max_id: max_id, min_id: min_id, limit: limit)
     end
 
     # Returns the count of the actor's posts since the given date.
@@ -1009,7 +1009,7 @@ module ActivityPub
         ORDER BY t.id DESC
            LIMIT ? OFFSET ?
         QUERY
-      Timeline.query_and_paginate(query, self.iri, page: page, size: size)
+      Timeline.query_and_paginate(query, iri, page: page, size: size)
     end
 
     # Returns entries in the actor's timeline.
@@ -1050,7 +1050,7 @@ module ActivityPub
            #{common_filters(objects: "o", actors: "c")}
            AND %{cursor_condition}
         QUERY
-      Timeline.query_with_cursor(query, self.iri, cursor_column: "t.id", max_id: max_id, min_id: min_id, limit: limit)
+      Timeline.query_with_cursor(query, iri, cursor_column: "t.id", max_id: max_id, min_id: min_id, limit: limit)
     end
 
     # Returns the count of entries in the actor's timeline since the
@@ -1217,7 +1217,7 @@ module ActivityPub
     end
 
     def from_json_ld(json, *, include_key = false)
-      self.assign(self.class.map(json, include_key: include_key))
+      assign(self.class.map(json, include_key: include_key))
     end
 
     def self.map(json, *, include_key = false, **options)

@@ -365,7 +365,7 @@ module ActivityPub
 
     def after_save
       previous_def
-      Ktistec::Topic.rename_subject(self.iri, self.thread)
+      Ktistec::Topic.rename_subject(iri, thread)
     end
   end
 end
