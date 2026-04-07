@@ -1,7 +1,11 @@
 require "../framework/controller"
 require "../models/activity_pub/object"
 require "../models/activity_pub/object/question"
+require "../models/activity_pub/activity/announce"
 require "../models/activity_pub/activity/create"
+require "../models/relationship/content/inbox"
+require "../models/relationship/content/outbox"
+require "../models/relationship/content/timeline/announce"
 require "../models/poll"
 require "../services/oauth2/client_registration"
 require "../services/object_factory"
@@ -214,7 +218,20 @@ class APIController
 
     timeline = actor.timeline(**params)
     statuses = timeline.map do |entry|
-      API::V1::Serializers::Status.from_object(entry.object, actor: actor)
+      object = entry.object
+      if entry.is_a?(Relationship::Content::Timeline::Announce)
+        announce = object.activities(inclusion: ActivityPub::Activity::Announce).find do |activity|
+          Relationship::Content::Outbox.find?(owner: actor, activity: activity) ||
+            Relationship::Content::Inbox.find?(owner: actor, activity: activity)
+        end
+        if announce.is_a?(ActivityPub::Activity::Announce)
+          API::V1::Serializers::Status.from_announce(announce, actor: actor)
+        else
+          API::V1::Serializers::Status.from_object(object, actor: actor)
+        end
+      else
+        API::V1::Serializers::Status.from_object(object, actor: actor)
+      end
     end
 
     if (link = link_header("/api/v1/timelines/home", statuses, params[:limit]))

@@ -703,6 +703,35 @@ Spectator.describe APIController do
           expect(response.headers["Link"]?).to contain(%Q(rel="next"))
         end
       end
+
+      context "with timeline items" do
+        let_create(:actor, named: :other)
+        let_create(:object, named: :post, attributed_to: other, published: Time.utc, visible: true)
+        let_create(:announce, object: post, published: Time.utc)
+
+        before_each do
+          put_in_inbox(actor, announce)
+          put_in_timeline_announce(actor, post)
+        end
+
+        it "wraps the announce in reblog" do
+          get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.first.dig?("reblog", "id")).to eq(post.id.to_s)
+        end
+
+        it "sets reblog account.id to the author" do
+          get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.first.dig?("reblog", "account", "id")).to eq(other.id.to_s)
+        end
+
+        it "includes account.id" do
+          get "/api/v1/timelines/home", headers: json_bearer_headers(access_token.token)
+          json = JSON.parse(response.body)
+          expect(json.as_a.first.dig?("account", "id")).to eq(announce.actor.id.to_s)
+        end
+      end
     end
   end
 
