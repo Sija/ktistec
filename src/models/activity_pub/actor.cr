@@ -511,7 +511,8 @@ module ActivityPub
     #
     # Returns objects in reverse chronological order (most recent
     # first). Filters out deleted/blocked objects, and objects by
-    # deleted/blocked actors.
+    # deleted/blocked actors. Does not include private (not visible)
+    # posts.
     #
     def pins(page = 1, size = 10)
       query = <<-QUERY
@@ -524,6 +525,7 @@ module ActivityPub
             AND r.type = '#{Relationship::Content::Pin}'
           WHERE r.from_iri = ?
             #{common_filters(objects: "o", actors: "c")}
+            AND o.visible = 1
        ORDER BY r.id DESC
           LIMIT ? OFFSET ?
       QUERY
@@ -546,6 +548,7 @@ module ActivityPub
             AND r.type = '#{Relationship::Content::Pin}'
           WHERE r.from_iri = ?
             #{common_filters(objects: "o", actors: "c")}
+            AND o.visible = 1
             AND r.created_at > ?
       QUERY
       Object.scalar(query, self.iri, since).as(Int64)
@@ -847,6 +850,8 @@ module ActivityPub
              ON p.type = '#{Relationship::Content::Pin}'
             AND p.from_iri = ?
             AND p.to_iri = o.iri
+          WHERE o.visible = 1
+            #{common_filters(objects: "o")}
        ORDER BY p.id DESC
       QUERY
       all_pinned = Object.query_all(all_pinned_query, self.iri)

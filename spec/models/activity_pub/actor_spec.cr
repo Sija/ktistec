@@ -1151,6 +1151,12 @@ Spectator.describe ActivityPub::Actor do
       expect(subject.pins(since: since)).to eq(4)
     end
 
+    it "filters out non-public posts" do
+      note5.assign(visible: false).save
+      expect(subject.pins).to eq([note4, note3, note2, note1])
+      expect(subject.pins(since: since)).to eq(4)
+    end
+
     it "filters out posts by deleted actors" do
       subject.delete!
       expect(subject.pins).to be_empty
@@ -1697,6 +1703,21 @@ Spectator.describe ActivityPub::Actor do
       it "does not duplicate pinned posts" do
         result = subject.public_posts_with_pins(1, 10)
         expect(result.to_a.count { |o| o.id == object1.id }).to eq(1)
+      end
+
+      it "filters out deleted posts" do
+        object1.delete!
+        expect(subject.public_posts_with_pins(1, 3)).to eq([object5, object4, object3])
+      end
+
+      it "filters out blocked posts" do
+        object1.block!
+        expect(subject.public_posts_with_pins(1, 3)).to eq([object5, object4, object3])
+      end
+
+      it "filters out non-public posts" do
+        object1.assign(visible: false).save
+        expect(subject.public_posts_with_pins(1, 3)).to eq([object5, object4, object3])
       end
     end
 

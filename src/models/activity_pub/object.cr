@@ -7,6 +7,7 @@ require "../activity_pub"
 require "../activity_pub/mixins/blockable"
 require "../relationship/content/approved"
 require "../relationship/content/canonical"
+require "../relationship/content/pin"
 require "../../services/thread_analysis_service"
 require "../../services/upload_service"
 require "../translation"
@@ -1074,6 +1075,11 @@ module ActivityPub
       end
     end
 
+    private def unpin_unless_visible
+      return if visible || !changed?(:visible)
+      Relationship::Content::Pin.where(object: self).each(&.destroy)
+    end
+
     private def update_canonical_path
       if @canonical_path_changed
         @canonical_path_changed = false
@@ -1113,6 +1119,7 @@ module ActivityPub
     end
 
     def before_save
+      unpin_unless_visible
       update_canonical_path
       update_thread
     end
