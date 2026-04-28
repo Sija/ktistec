@@ -38,6 +38,7 @@
   - [Building](#building)
     - [Crystal Compatibility](#crystal-compatibility)
     - [SQLite3 Compatibility](#sqlite3-compatibility)
+    - [Building in a Container](#building-in-a-container)
     - [Running Tests](#running-tests)
   - [Setup, Configuration, and Usage](#setup-configuration-and-usage)
     - [Command Line Options](#command-line-options)
@@ -1024,6 +1025,10 @@ problems for Ktistec:
 |--|--|
 | 3.39.x | problems with bloom filters and recursive queries [link](https://sqlite.org/forum/forumpost/56de336385) |
 | 3.40.x | problems with bloom filters and recursive queries [link](https://sqlite.org/forum/forumpost/56de336385) |
+
+### Building in a Container
+
+See the [Dockerfile](Dockerfile).
 
 ### Running Tests
 
