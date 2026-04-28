@@ -188,6 +188,18 @@ Spectator.describe "helpers" do
     it "does not wrap text" do
       expect(subject.xpath_nodes("/span/text()")).to contain("f", "o")
     end
+
+    context "with HTML metacharacters" do
+      let(term) { %{<script>alert(1)</script>} }
+
+      it "does not emit the script tag unescaped" do
+        expect(self.class.wrap_filter_term(term)).not_to contain(%{<script>alert(1)</script>})
+      end
+
+      it "emits the term as escaped HTML" do
+        expect(self.class.wrap_filter_term(term)).to contain(%{&lt;script&gt;alert(1)&lt;/script&gt;})
+      end
+    end
   end
 
   describe ".normalize_params" do
