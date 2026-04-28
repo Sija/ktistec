@@ -376,6 +376,25 @@ Spectator.describe APIController do
         expect(json.dig?("source", "language")).to eq("en")
       end
     end
+
+    context "with nearly expired token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account, expires_at: 1.day.from_now)
+
+      it "slides expires_at forward" do
+        get "/api/v1/accounts/verify_credentials", headers: json_bearer_headers(access_token.token)
+        expect(access_token.reload!.expires_at).to be_close(Time.utc + OAuth2::Provider::AccessToken::TTL, delta: 1.minute)
+      end
+    end
+
+    context "with freshly issued token" do
+      let_create(:oauth2_provider_access_token, named: :access_token, client: client, account: account, expires_at: Time.utc + OAuth2::Provider::AccessToken::TTL)
+
+      it "leaves expires_at unchanged" do
+        expires_at = access_token.expires_at
+        get "/api/v1/accounts/verify_credentials", headers: json_bearer_headers(access_token.token)
+        expect(access_token.reload!.expires_at).to be_close(expires_at, delta: 1.second)
+      end
+    end
   end
 
   describe "GET /api/v1/accounts" do
