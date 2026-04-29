@@ -267,7 +267,8 @@ module ActivityPub
               enhancements = Ktistec::HTML.enhance(source_content)
               self.content = enhancements.content
               if (quote_iri = self.quote_iri)
-                self.content = "<p class=\"quote-inline\">RE: #{Ktistec::Util.wrap_link(quote_iri)}</p>#{self.content}"
+                wrapped_quote_iri = Ktistec::Util.wrap_link(quote_iri) || ::HTML.escape(quote_iri)
+                self.content = "<p class=\"quote-inline\">RE: #{wrapped_quote_iri}</p>#{self.content}"
               end
               self.media_type = media_type
               self.attachments = enhancements.attachments

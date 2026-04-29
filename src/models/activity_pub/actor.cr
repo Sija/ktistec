@@ -132,6 +132,13 @@ module ActivityPub
 
       def initialize(@name, @type, @value)
       end
+
+      # Renders the attachment value as HTML that is safe to
+      # interpolate unescaped.
+      #
+      def value_as_html(length : Int32 = 50) : String
+        Ktistec::Util.wrap_link(value, length: length) || Ktistec::Util.sanitize(value)
+      end
     end
 
     @[Persistent]
